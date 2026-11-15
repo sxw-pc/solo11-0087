@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tender-anchor"
+version = "0.1.0"
+description = "标讯锚：纯本地标讯采集、归一化、复核与导出工作台"
+requires-python = ">=3.11"
+dependencies = [
+  "Flask>=3.0,<4",
+  "requests>=2.31,<3",
+  "beautifulsoup4>=4.12,<5",
+  "soupsieve>=2.5,<3",
+  "PyYAML>=6.0,<7",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0,<9"]
+
+[project.scripts]
+tender-anchor = "tender_anchor.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"tender_anchor.mock_portal" = ["data/*.json", "data/attachments/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
