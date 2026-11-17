@@ -1,5 +1,9 @@
 # 标讯锚（tender-anchor）
 
+隔离业务素材包含 `fixtures/contracts/delivery_case.json` 与
+`src/tender_anchor/contract_intake.py::preview_contract_case`：它把本地授标合同、
+两项里程碑及交付/检验事件关联到已采集招标公告，尚不裁定验收或应付。
+
 **标讯锚**是一个纯本地、配置驱动、可重复运行的标讯采集与核验工作台。它把一条完整的离线数据链路收敛为可测试的工程闭环：
 
 > 本机 mock 标讯门户 → 列表翻页 → 详情抽取 → 金额/日期归一化 → 更正公告关联 → 附件采集 → SQLite 幂等入库 → 质量规则复核 → 只读复核台与结构化导出

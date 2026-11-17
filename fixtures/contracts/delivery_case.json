@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "contract": {"contract_id":"C-001","notice_id":"TA-2026-0001","supplier_id":"supplier-a","award_at":"2026-12-10T10:00:00+08:00","award_amount":"600000.00"},
+  "milestones": [
+    {"milestone_id":"M1","kind":"hardware","units":4,"unit_amount":"100000.00","amount":"400000.00","due_at":"2027-01-10T18:00:00+08:00"},
+    {"milestone_id":"M2","kind":"commissioning","depends_on":["M1"],"amount":"200000.00","due_at":"2027-01-20T18:00:00+08:00"}
+  ],
+  "events": [
+    {"event_id":"D1","contract_id":"C-001","milestone_id":"M1","kind":"delivered","at":"2027-01-08T09:00:00+08:00","units":["U1","U2","U3","U4"]},
+    {"event_id":"I1","contract_id":"C-001","milestone_id":"M1","kind":"inspected","at":"2027-01-08T12:00:00+08:00","accepted":["U1","U2","U3"],"rejected":["U4"]},
+    {"event_id":"I2","contract_id":"C-001","milestone_id":"M2","kind":"inspected","at":"2027-01-09T12:00:00+08:00","result":"provisional_pass"},
+    {"event_id":"D2","contract_id":"C-001","milestone_id":"M1","kind":"replaced","at":"2027-01-12T09:00:00+08:00","old_unit":"U4","new_unit":"U4R"},
+    {"event_id":"I3","contract_id":"C-001","milestone_id":"M1","kind":"inspected","at":"2027-01-12T12:00:00+08:00","accepted":["U4R"],"rejected":[]}
+  ]
+}
