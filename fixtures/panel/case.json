@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "notice_id": "TA-2026-0001",
+  "bids": [
+    {"bid_id":"BID-A","notice_id":"TA-2026-0001","bidder_id":"supplier-a","received_at":"2026-11-30T09:00:00+08:00","amount":"1250000.00"},
+    {"bid_id":"BID-B","notice_id":"TA-2026-0001","bidder_id":"supplier-b","received_at":"2026-11-30T09:05:00+08:00","amount":"1200000.00"}
+  ],
+  "reviewers": [
+    {"reviewer_id":"R1","role":"initial"},
+    {"reviewer_id":"R2","role":"initial"},
+    {"reviewer_id":"R3","role":"initial"},
+    {"reviewer_id":"R4","role":"alternate"}
+  ],
+  "ballots": [
+    {"ballot_id":"R1-A","reviewer_id":"R1","bid_id":"BID-A","score":92,"at":"2026-12-01T10:00:00+08:00"},
+    {"ballot_id":"R1-B","reviewer_id":"R1","bid_id":"BID-B","score":60,"at":"2026-12-01T10:00:00+08:00"},
+    {"ballot_id":"R2-A","reviewer_id":"R2","bid_id":"BID-A","score":80,"at":"2026-12-01T10:01:00+08:00"},
+    {"ballot_id":"R2-B","reviewer_id":"R2","bid_id":"BID-B","score":85,"at":"2026-12-01T10:01:00+08:00"},
+    {"ballot_id":"R3-A","reviewer_id":"R3","bid_id":"BID-A","score":82,"at":"2026-12-01T10:02:00+08:00"},
+    {"ballot_id":"R3-B","reviewer_id":"R3","bid_id":"BID-B","score":83,"at":"2026-12-01T10:02:00+08:00"},
+    {"ballot_id":"R4-A","reviewer_id":"R4","bid_id":"BID-A","score":76,"at":"2026-12-02T10:00:00+08:00"},
+    {"ballot_id":"R4-B","reviewer_id":"R4","bid_id":"BID-B","score":89,"at":"2026-12-02T10:00:00+08:00"}
+  ],
+  "disclosures": [
+    {"disclosure_id":"DISC-1","reviewer_id":"R1","bid_id":"BID-A","kind":"financial_tie","at":"2026-12-02T09:00:00+08:00"}
+  ]
+}
