@@ -1,8 +1,10 @@
 # 标讯锚（tender-anchor）
 
 隔离业务素材包含 `fixtures/clarifications/case.json` 与
-`src/tender_anchor/clarification_intake.py::preview_clarification`：它将本地澄清答复、
-公开状态和参与者接触事件关联到已采集公告，尚不裁定信息对等资格。
+`src/tender_anchor/clarification_intake.py`：它将本地澄清答复、公开状态和参与者
+接触事件关联到已采集公告，并由 `src/tender_anchor/parity.py` 与
+`parity_evidence.py` 裁定信息对等资格（公开可达 / 逐人收讫两种合同模式），
+通过 `clarify` 子命令落库、审计并导出可回读的证据链。
 
 **标讯锚**是一个纯本地、配置驱动、可重复运行的标讯采集与核验工作台。它把一条完整的离线数据链路收敛为可测试的工程闭环：
 
@@ -95,7 +97,25 @@ SQLite 中保存运行台账、字段来源、原始响应哈希、版本快照�
 - **附件采集**：只下载白名单内链接，防目录穿越，按 SHA-256 命名，保留成功/失败原因。
 - **幂等入库**：同一公告相同 HTML 不新增版本；内容变化时版本号递增并保留历史。
 - **质量复核**：必填字段、预算区间、截止时间早于发布时间、附件失败、结果公告缺少成交信息、更正原公告不存在等规则。
+- **澄清信息对等裁定**：把澄清问题、私答草稿、匿名化正式条款、参与者接触事件与公告更正关联成证据链，按合同模式裁定共同条款资格；不从页面现状倒填任何人过去的知情权。
 - **只读复核台**：概览、公告列表/详情、复核队列、运行台账、审计事件、JSON/CSV 下载；不提供任何写接口。
+
+### 澄清信息对等裁定
+
+```bash
+# 对一份离线澄清证据案件做裁定并落库（需先 crawl/demo 采集公告与更正）
+python -m tender_anchor clarify --data-dir data_demo \
+  --case-file fixtures/clarifications/case.json
+```
+
+裁定只依据显式证据，关键规则：
+
+- **证据链硬检查**：招标公告已采集；同一 `answer_id` 不得对应不同正文；正式公开条款唯一且已匿名化；私答草稿不得被非收件人接触；至少存在一条对公开版的接触；截止时间证据（原公告或更正）存在。
+- **7 日准备期**：自公开版发布时刻起，到适用截止时刻须满足完整 7 日。优先采用已核实更正公告中的截止时间（如 TA-2026-0003 把 TA-2026-0001 的 12-01 延至 12-05）；无更正时退回原公告截止，窗口不足则拒绝。
+- **公开可达合同（public_open）**：正式条款已匿名化、真实公开且准备期足够即可认证，不要求每位投标人都点击。
+- **逐人收讫合同（per_person_receipt）**：每位报名者都须有对同一正式版本的独立收讫事件；私答接触不计入公开收讫，迟到下载保留其真实时间、不倒填为发布日；缺收讫时整体待核。
+- **终局不可变**：已发出的 `certified`/`rejected` 认证不被重放重写；证据或更正截止变化引发冲突时直接报错。`pending`/`unverifiable` 为临时结论，允许补证后演进。
+- 产物写入 `exports/clarification_parity.json`，并在 `audit_events` 留下每次导入与每个合同模式的审计记录。
 
 ## 项目结构
 
@@ -109,6 +129,10 @@ src/tender_anchor/
   normalize.py          金额、时间、哈希、文本归一化
   pipeline.py           单次采集编排
   pipeline_helpers.py   分页、归一化、附件与入库步骤
+  clarification_intake.py  澄清案件读取、证据校验与指纹
+  clarification_store.py   澄清证据/对等认证的幂等落库与冲突保护
+  parity_evidence.py    证据链组装、截止证据与 7 日准备期
+  parity.py             两种合同模式的信息对等裁定
   store.py              幂等写库、版本、复核状态
   store_queries.py      SQLite 查询与只读查询封装
   rules.py              质量规则

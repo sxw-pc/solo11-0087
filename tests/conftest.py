@@ -13,6 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+TESTS = Path(__file__).resolve().parent
+if str(TESTS) not in sys.path:
+    sys.path.insert(0, str(TESTS))
 
 from tender_anchor.app_paths import ensure_layout  # noqa: E402
 from tender_anchor.config import load_rules  # noqa: E402

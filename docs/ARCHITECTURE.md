@@ -51,6 +51,10 @@ pipeline.run_crawl
 | `export.py` | JSON/CSV 导出、运行报告、固定排序 |
 | `pipeline.py` | 一次采集的生命周期、事务边界、失败收尾 |
 | `pipeline_helpers.py` | 分页、字段归一化、来源构造、单公告处理 |
+| `clarification_intake.py` | 离线澄清案件读取、证据结构校验、案件指纹 |
+| `clarification_store.py` | 澄清证据与对等认证的幂等落库、终局锁定与冲突保护 |
+| `parity_evidence.py` | 证据链组装、原/更正截止选择、7 日准备期计算 |
+| `parity.py` | 公开可达与逐人收讫两种合同模式的纯函数裁定 |
 | `web.py` | 只读 Flask 路由、安全响应头、下载 |
 | `review_views.py` | 复核台 HTML 构造（无外部资源） |
 | `mock_portal/` | 虚构门户；分页、详情、附件、健康检查 |
@@ -134,3 +138,25 @@ pipeline.run_crawl
 - 只处理 HTML 选择器和普通 HTTP 文件下载；不解析附件全文、不执行 JavaScript、不做 OCR。
 - 公告最新更正不会自动回写到原公告的规范字段；关系、变更值及原公告版本分别保留，供复核与下游判断。
 - 缺失脏数据（如“详见附件”预算）会保留原始来源并进入复核队列，而不是猜测金额。
+
+## 9. 澄清信息对等裁定
+
+离线 `clarify` 流程独立于采集管线运行，但复用同一个 SQLite 与只读查询层：
+
+1. `clarification_intake.read_clarification_case` 校验案件结构：摘要哈希、参与者、
+   事件唯一性、公开版匿名化、私答仅收件人可接触。
+2. `parity_evidence.build_case_view` 把答复版本、接触事件、已采集招标公告与
+   `get_corrections` 返回的更正证据组装成证据链，并选择适用截止时间（最新已核实
+   更正截止优先，否则原公告截止），计算公开版发布到截止的准备天数。
+3. `parity.adjudicate` 对两个合同模式分别给出 `certified` / `pending` /
+   `rejected` / `unverifiable`：公开可达只看匿名化、真实公开与 7 日窗口；逐人
+   收讫还要求每位参与者对同一正式版本有独立公开收讫。
+4. `clarification_store` 幂等落库案件、答复、接触与认证，并写 `audit_events`。
+
+关键不变量：
+
+- 私答草稿接触永不计入公开收讫，也不提前启动共同准备期。
+- 参与者收讫时间只取自显式公开版接触事件，迟到下载保留真实时间，不倒填发布日。
+- 裁定是案件证据与库内公告/更正证据的纯函数；更正截止或来源变化必然改变准备期
+  与资格，重放时若与已发终局认证不一致即报冲突，不重写历史。
+- 本流程不判定中标轮次或保证金，也不改变原公告采集、bid intake 与既有更正关系语义。

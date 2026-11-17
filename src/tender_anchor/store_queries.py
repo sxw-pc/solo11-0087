@@ -17,6 +17,8 @@ class StoreQueriesMixin:
         allowed = {
             "notices", "attachments", "corrections", "notice_revisions",
             "raw_snapshots", "review_items", "runs", "field_sources", "audit_events",
+            "clarification_cases", "clarification_answers", "clarification_access",
+            "parity_certifications", "bid_submissions",
         }
         if table not in allowed:
             raise StoreError("STORE_QUERY", f"不允许的统计表：{table}")
@@ -138,6 +140,56 @@ class StoreQueriesMixin:
             "review_items": self.get_review_items(notice_id=notice_id),
             "snapshots": self.get_snapshots(notice_id),
         }
+
+    def list_clarification_cases(self) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT * FROM clarification_cases ORDER BY case_key"
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_clarification_case(self, case_key: str) -> dict[str, Any] | None:
+        row = self.connection.execute(
+            "SELECT * FROM clarification_cases WHERE case_key=?", (case_key,)
+        ).fetchone()
+        if row is None:
+            return None
+        item = dict(row)
+        item["participants"] = json.loads(item.pop("participants_json"))
+        item["payload"] = json.loads(item.pop("payload_json"))
+        item["answers"] = [
+            dict(answer) for answer in self.connection.execute(
+                "SELECT answer_id, visibility, recipient, term_id, published_at, "
+                "redacted_questioner, content_sha256, content FROM clarification_answers "
+                "WHERE case_key=? ORDER BY published_at, answer_id", (case_key,)
+            ).fetchall()
+        ]
+        item["access_events"] = [
+            dict(event) for event in self.connection.execute(
+                "SELECT event_id, answer_id, bidder_id, accessed_at, content_sha256 "
+                "FROM clarification_access WHERE case_key=? ORDER BY accessed_at, event_id",
+                (case_key,),
+            ).fetchall()
+        ]
+        return item
+
+    def get_parity_certifications(self, case_key: str) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT * FROM parity_certifications WHERE case_key=? "
+            "ORDER BY contract_mode", (case_key,)
+        ).fetchall()
+        result = []
+        for row in rows:
+            item = dict(row)
+            item["decision"] = json.loads(item.pop("decision_json"))
+            result.append(item)
+        return result
+
+    def get_clarification_bundle(self, case_key: str) -> dict[str, Any] | None:
+        case = self.get_clarification_case(case_key)
+        if case is None:
+            return None
+        case["certifications"] = self.get_parity_certifications(case_key)
+        return case
 
     def stats(self) -> dict[str, Any]:
         kinds = {

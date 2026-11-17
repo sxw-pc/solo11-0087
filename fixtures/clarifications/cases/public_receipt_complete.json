@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "notice_id": "TA-2026-0001",
+  "question_id": "Q-002",
+  "questioner": "supplier-a",
+  "participants": [
+    "supplier-a",
+    "supplier-b"
+  ],
+  "answers": [
+    {
+      "answer_id": "A-PRIVATE",
+      "at": "2026-11-21T10:00:00+08:00",
+      "visibility": "private_draft",
+      "term_id": "installation-option",
+      "content": "安装方案可用替代控制器，但只供提问者内部参考。",
+      "content_sha256": "50392381b8fbd78b3e1e4dc2de775af4eb755aa166d8be7f91a7ed4d1041a48c",
+      "recipient": "supplier-a"
+    },
+    {
+      "answer_id": "A-PUBLIC",
+      "at": "2026-11-25T10:00:00+08:00",
+      "visibility": "public",
+      "term_id": "installation-option",
+      "content": "安装方案可用替代控制器，所有投标人按同一技术规格提交。",
+      "content_sha256": "bebdf5a6b20b633a95f171a1add837603db8dd8cbbed14e2dd7896ac78c4c65b",
+      "redacted_questioner": true
+    }
+  ],
+  "access_events": [
+    {
+      "event_id": "E-A",
+      "answer_id": "A-PRIVATE",
+      "bidder_id": "supplier-a",
+      "at": "2026-11-21T10:01:00+08:00"
+    },
+    {
+      "event_id": "E-A2",
+      "answer_id": "A-PUBLIC",
+      "bidder_id": "supplier-a",
+      "at": "2026-11-25T14:00:00+08:00"
+    },
+    {
+      "event_id": "E-B",
+      "answer_id": "A-PUBLIC",
+      "bidder_id": "supplier-b",
+      "at": "2026-11-26T09:00:00+08:00"
+    }
+  ]
+}

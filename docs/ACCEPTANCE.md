@@ -50,7 +50,26 @@ pytest -q
 
 验收要求：全部测试通过，无失败。测试使用临时目录和随机 loopback 端口，不访问外部网络。
 
-### 2.4 只读复核台
+### 2.4 澄清信息对等裁定
+
+先完成一次采集（demo 或 crawl），再执行：
+
+```bash
+python -m tender_anchor clarify --data-dir data_demo \
+  --case-file fixtures/clarifications/case.json
+```
+
+验收要求：
+
+- 退出码为 0，输出包含两个合同模式的裁定与导出路径。
+- 基线案件中 `public_open` 为 `certified`（依据 TA-2026-0003 更正后的 12-05 截止，准备期 10 天）；
+  `per_person_receipt` 为 `pending`（supplier-a 仅有私答接触，supplier-b 26 日才下载公开版）。
+- 再次执行同一案件：`outcome` 为 `unchanged`，认证行与 `decision_hash` 不变。
+- 导入 `fixtures/clarifications/cases/public_receipt_complete.json`：逐人收讫转为 `certified`。
+- 对已认证案件改动任一接触事件后重导：退出码 2，错误码 `CLARIFICATION_CONFLICT`，原认证保留。
+- 生成 `exports/clarification_parity.json`，内容与库内回读一致；审计事件含每次导入与两个合同模式。
+
+### 2.5 只读复核台
 
 ```bash
 python -m tender_anchor serve-review --data-dir data_demo
@@ -81,6 +100,10 @@ python -m tender_anchor serve-review --data-dir data_demo
 | `test_rules.py` | 必填、预算区间、截止时间、附件失败、结果缺失、更正关联、排序 |
 | `test_pipeline.py` | 端到端、二次运行、导出顺序、外链阻断、重定向阻断 |
 | `test_web.py` | 页面、过滤、安全头、错误码、只读、下载、缺少导出 |
+| `test_clarification_intake.py` | 澄清案件校验、匿名化、私答泄露、参与者/事件身份、指纹 |
+| `test_parity_adjudication.py` | 两合同资格、原/更正截止、7 日窗口、私答隔离、迟到签收、冲突正文 |
+| `test_clarification_persistence.py` | 证据链落库、幂等重放、审计、导出回读、CLI 离线入口 |
+| `test_clarification_conflicts.py` | 认证后证据/更正变更冲突、待核补证演进、截止依据回退 |
 
 ## 4. 安全验收
 
@@ -95,7 +118,7 @@ python -m tender_anchor serve-review --data-dir data_demo
 
 ## 5. 工程质量验收
 
-- Python 代码（含测试）总量在 2500–4500 行之间。
+- Python 代码（含测试）总量在 2500–6000 行之间。
 - 任何 Python 文件不超过 300 行。
 - 运行依赖均为常见本机包，无浏览器二进制、GPU、外部数据库。
 - 错误使用稳定错误码；运行错误可解释。

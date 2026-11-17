@@ -15,9 +15,11 @@ from .app_paths import (
     DEFAULT_CONFIG, DEFAULT_DATA, DEFAULT_RULES, DEMO_DATA, ensure_layout,
 )
 from .bid_intake import intake_bids, read_bids
+from .clarification_intake import read_clarification_case
+from .clarification_store import intake_clarification, make_clarify_run_id
 from .config import load_config, load_rules
 from .errors import AppError
-from .export import export_all
+from .export import export_all, export_parity
 from .mock_portal.app import create_mock_app
 from .pipeline import run_crawl
 from .store import Store
@@ -100,6 +102,19 @@ def _bid_intake(args: argparse.Namespace) -> int:
     return 0
 
 
+def _clarify(args: argparse.Namespace) -> int:
+    paths = ensure_layout(Path(args.data_dir))
+    case = read_clarification_case(args.case_file)
+    with Store(paths.db_path) as store:
+        from .clarification_intake import case_fingerprint
+
+        run_id = make_clarify_run_id(case_fingerprint(case))
+        result = intake_clarification(store, case, run_id)
+        exported = export_parity(store, paths)
+    _emit({"clarification": result, "export": exported})
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tender_anchor",
@@ -131,6 +146,12 @@ def build_parser() -> argparse.ArgumentParser:
     bids = sub.add_parser("bid-intake", help="核对虚构投标信封与已采集公告")
     bids.add_argument("--data-dir", default=str(DEFAULT_DATA))
     bids.add_argument("--bids", required=True)
+
+    clarify = sub.add_parser(
+        "clarify", help="裁定澄清答复的信息对等资格并落库审计"
+    )
+    clarify.add_argument("--data-dir", default=str(DEFAULT_DATA))
+    clarify.add_argument("--case-file", required=True)
     return parser
 
 
@@ -153,8 +174,13 @@ def main(argv: list[str] | None = None) -> int:
             return _export(args)
         if args.command == "bid-intake":
             return _bid_intake(args)
+        if args.command == "clarify":
+            return _clarify(args)
     except AppError as exc:
         _emit({"error": exc.to_dict()})
+        return 2
+    except ValueError as exc:
+        _emit({"error": {"code": "CLARIFICATION_CONFLICT", "message": str(exc)}})
         return 2
     except OSError as exc:
         _emit({"error": {"code": "PIPELINE_FATAL", "message": str(exc)}})

@@ -16,6 +16,10 @@ notices 1 ─── n attachments
     │   1 ─── n field_sources
     │   n ─── n corrections（通过 correction_notice_id / original_notice_id）
     └── 1 ─── n review_items
+
+clarification_cases 1 ─── n clarification_answers
+                     1 ─── n clarification_access
+                     1 ─── n parity_certifications（每个合同模式一行）
 ```
 
 ## 2. 表定义
@@ -188,6 +192,68 @@ notices 1 ─── n attachments
 
 外部地址、重定向、HTTP 错误等安全/传输事件会写审计；正常请求的留档由 `raw_snapshots` 和列表归档路径体现。
 
+### `clarification_cases`
+
+澄清披露案件主表，主键为 `<notice_id>#<question_id>`。
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `case_key` | TEXT PK | 案件稳定标识 |
+| `notice_id` / `question_id` / `questioner` | TEXT | 关联公告、问题与提问者 |
+| `participants_json` | TEXT | 报名参与者 ID 数组 |
+| `case_hash` | TEXT | 全部证据（答复+接触事件）的 SHA-256 指纹 |
+| `payload_json` | TEXT | 案件完整快照 |
+| `deadline_basis` | TEXT | 适用截止依据：`original_notice` 或 `correction:<id>` |
+| `deadline_at` | TEXT | 裁定时采用的截止时间 |
+| `first_seen_run` / `last_seen_run` | TEXT | 首次/最近导入运行（离线 intake 运行以 `clarify-` 开头） |
+
+### `clarification_answers`
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `case_key` | TEXT | 所属案件 |
+| `answer_id` | TEXT | 答复标识（私答与公开版可不同；同 id 不同正文会被裁定拒绝） |
+| `visibility` | TEXT | `private_draft` / `public` |
+| `recipient` | TEXT | 私答指定收件人；公开版为空 |
+| `term_id` | TEXT | 答复对应的条款主题 |
+| `published_at` | TEXT | 答复形成/发布时间 |
+| `redacted_questioner` | INTEGER | 公开版是否已匿名化（1/0） |
+| `content_sha256` | TEXT | 正文摘要哈希 |
+| `content` | TEXT | 答复正文 |
+
+主键：`(case_key, answer_id, content_sha256)`，允许保留同 id 的正文冲突证据。
+
+### `clarification_access`
+
+参与者接触事件；只有指向公开版的事件才构成公开收讫。
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `case_key` / `event_id` | TEXT | 案件与事件稳定 ID，联合主键 |
+| `answer_id` | TEXT | 被接触的答复版本 |
+| `bidder_id` | TEXT | 接触参与者，必须在 `participants` 内 |
+| `accessed_at` | TEXT | 接触真实时间，禁止倒填 |
+| `content_sha256` | TEXT | 被接触版本的正文哈希 |
+
+### `parity_certifications`
+
+每个案件 × 合同模式一行的信息对等认证。
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `case_key` | TEXT | 所属案件 |
+| `contract_mode` | TEXT | `public_open` / `per_person_receipt` |
+| `status` | TEXT | `certified` / `pending` / `rejected` / `unverifiable` |
+| `reason` | TEXT | 稳定原因码，如 `awaiting_individual_receipts` |
+| `decision_hash` | TEXT | 完整裁定 JSON 的哈希，重放比对用 |
+| `decision_json` | TEXT | 含检查项、截止依据、准备期、逐人收讫的完整裁定 |
+| `evidence_hash` | TEXT | 对应案件指纹 |
+| `created_run` / `created_at` | TEXT | 首次发出运行与时间 |
+
+主键：`(case_key, contract_mode)`。终局状态 `certified`/`rejected` 发出后冻结；
+证据或更正截止变化导致裁定不同时重放会报 `CLARIFICATION_CONFLICT`，不重写已发认证。
+`pending`/`unverifiable` 为临时结论，补证后允许演进。
+
 ## 3. 导出 JSON
 
 顶层：
@@ -231,6 +297,24 @@ notices 1 ─── n attachments
 - 行按 `notice_id` 排序。
 - `quality_codes` 为去重排序后的规则码，以 `|` 连接。
 - 时间与金额保持数据库中的规范文本。
+
+## 4.1 澄清对等导出 `exports/clarification_parity.json`
+
+仅当数据库中存在澄清案件时由 `export` / `clarify` 生成。顶层：
+
+```json
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-25T15:00:00+08:00",
+  "case_count": 1,
+  "clarification_cases": []
+}
+```
+
+每个案件回读：`case_key`、参与者、案件指纹、截止依据与截止时间、全部 `answers`、
+全部 `access_events`，以及每个合同模式的 `certifications`（状态、原因码、
+`decision_hash`、`evidence_hash`、首次运行与完整 `decision`）。该导出与数据库
+重算结果逐字节一致，用于离线复核与冲突重放。
 
 ## 5. 附件本地命名
 

@@ -137,6 +137,57 @@ CREATE TABLE IF NOT EXISTS audit_events (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS clarification_cases (
+    case_key TEXT PRIMARY KEY,
+    notice_id TEXT NOT NULL,
+    question_id TEXT NOT NULL,
+    questioner TEXT NOT NULL,
+    participants_json TEXT NOT NULL,
+    case_hash TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    deadline_basis TEXT NOT NULL DEFAULT '',
+    deadline_at TEXT NOT NULL DEFAULT '',
+    first_seen_run TEXT NOT NULL,
+    last_seen_run TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS clarification_answers (
+    case_key TEXT NOT NULL,
+    answer_id TEXT NOT NULL,
+    visibility TEXT NOT NULL,
+    recipient TEXT NOT NULL DEFAULT '',
+    term_id TEXT NOT NULL DEFAULT '',
+    published_at TEXT NOT NULL,
+    redacted_questioner INTEGER NOT NULL DEFAULT 0,
+    content_sha256 TEXT NOT NULL,
+    content TEXT NOT NULL,
+    PRIMARY KEY(case_key, answer_id, content_sha256)
+);
+
+CREATE TABLE IF NOT EXISTS clarification_access (
+    case_key TEXT NOT NULL,
+    event_id TEXT NOT NULL,
+    answer_id TEXT NOT NULL,
+    bidder_id TEXT NOT NULL,
+    accessed_at TEXT NOT NULL,
+    content_sha256 TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY(case_key, event_id)
+);
+
+CREATE TABLE IF NOT EXISTS parity_certifications (
+    case_key TEXT NOT NULL,
+    contract_mode TEXT NOT NULL,
+    status TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    decision_hash TEXT NOT NULL,
+    decision_json TEXT NOT NULL,
+    evidence_hash TEXT NOT NULL,
+    created_run TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY(case_key, contract_mode)
+);
+
 CREATE INDEX IF NOT EXISTS idx_notices_kind ON notices(kind);
 CREATE INDEX IF NOT EXISTS idx_notices_publish ON notices(publish_at);
 CREATE INDEX IF NOT EXISTS idx_attachments_notice ON attachments(notice_id);
@@ -144,4 +195,7 @@ CREATE INDEX IF NOT EXISTS idx_corrections_original ON corrections(original_noti
 CREATE INDEX IF NOT EXISTS idx_review_status ON review_items(status, severity);
 CREATE INDEX IF NOT EXISTS idx_audit_run ON audit_events(run_id);
 CREATE INDEX IF NOT EXISTS idx_revisions_notice ON notice_revisions(notice_id);
+CREATE INDEX IF NOT EXISTS idx_clarification_notice ON clarification_cases(notice_id);
+CREATE INDEX IF NOT EXISTS idx_access_bidder ON clarification_access(case_key, bidder_id);
+CREATE INDEX IF NOT EXISTS idx_parity_status ON parity_certifications(status);
 """

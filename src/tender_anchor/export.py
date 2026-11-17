@@ -160,17 +160,73 @@ def _write_csv(path: Path, store: Store) -> int:
     return count
 
 
+def build_parity_export(store: Store) -> dict[str, Any]:
+    """Export every persisted clarification case with its evidence chain."""
+    cases = []
+    for row in store.list_clarification_cases():
+        bundle = store.get_clarification_bundle(row["case_key"])
+        if bundle is None:
+            continue
+        cases.append(
+            {
+                "case_key": bundle["case_key"],
+                "notice_id": bundle["notice_id"],
+                "question_id": bundle["question_id"],
+                "questioner": bundle["questioner"],
+                "participants": bundle["participants"],
+                "case_hash": bundle["case_hash"],
+                "deadline_basis": bundle["deadline_basis"],
+                "deadline_at": bundle["deadline_at"],
+                "answers": bundle["answers"],
+                "access_events": bundle["access_events"],
+                "certifications": [
+                    {
+                        "contract_mode": item["contract_mode"],
+                        "status": item["status"],
+                        "reason": item["reason"],
+                        "decision_hash": item["decision_hash"],
+                        "evidence_hash": item["evidence_hash"],
+                        "created_run": item["created_run"],
+                        "decision": item["decision"],
+                    }
+                    for item in bundle["certifications"]
+                ],
+            }
+        )
+    return {
+        "schema_version": EXPORT_SCHEMA_VERSION,
+        "generated_at": now_iso(),
+        "case_count": len(cases),
+        "clarification_cases": cases,
+    }
+
+
+def export_parity(store: Store, paths: DataPaths) -> dict[str, Any]:
+    json_path = ensure_within(
+        paths.root, paths.exports / "clarification_parity.json", label="export"
+    )
+    payload = build_parity_export(store)
+    _write_json(json_path, payload)
+    return {
+        "parity_json_path": paths.relative(json_path),
+        "case_count": payload["case_count"],
+    }
+
+
 def export_all(store: Store, paths: DataPaths) -> dict[str, Any]:
     json_path = ensure_within(paths.root, paths.exports / "notices.json", label="export")
     csv_path = ensure_within(paths.root, paths.exports / "notices.csv", label="export")
     _write_json(json_path, build_export(store))
     csv_count = _write_csv(csv_path, store)
-    return {
+    result = {
         "json_path": paths.relative(json_path),
         "csv_path": paths.relative(csv_path),
         "csv_rows": csv_count,
         "notice_count": store.count("notices"),
     }
+    if store.count("clarification_cases"):
+        result.update(export_parity(store, paths))
+    return result
 
 
 def write_run_report(paths: DataPaths, summary: dict[str, Any]) -> str:
