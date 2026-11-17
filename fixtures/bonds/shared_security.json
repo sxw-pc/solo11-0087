@@ -9,5 +9,8 @@
     {"instrument_id":"G-01","bidder_id":"supplier-a","kind":"bank_guarantee","amount":"30000.00","valid_until":"2026-12-10T23:59:00+08:00"},
     {"instrument_id":"G-02","bidder_id":"supplier-a","kind":"bank_guarantee","amount":"10000.00","valid_until":"2026-12-20T23:59:00+08:00"}
   ],
-  "pledges": []
+  "pledges": [
+    {"pledge_id":"P-BID001-CASH","bid_id":"BID-001","instrument_id":"CASH-01","amount":"20000.00","posted_at":"2026-11-30T09:00:00+08:00"},
+    {"pledge_id":"P-BID001-G1","bid_id":"BID-001","instrument_id":"G-01","amount":"5000.00","posted_at":"2026-11-30T09:00:00+08:00"}
+  ]
 }

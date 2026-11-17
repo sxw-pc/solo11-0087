@@ -19,6 +19,7 @@ def test_bond_preview_keeps_bid_and_security_evidence(crawled):
     assert [row["status"] for row in preview["bids"]] == ["eligible", "eligible"]
     assert preview["total_security"] == "60000.00"
     assert [item["instrument_id"] for item in preview["instruments"]] == ["CASH-01", "G-01", "G-02"]
+    assert [item["instrument_id"] for item in case["pledges"]] == ["CASH-01", "G-01"]
 
 
 def test_bond_case_rejects_duplicate_instrument(tmp_path):

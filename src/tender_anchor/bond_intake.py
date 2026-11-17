@@ -55,6 +55,19 @@ def read_bond_case(path: str | Path) -> dict[str, Any]:
         if instrument.get("valid_until"):
             if datetime.fromisoformat(instrument["valid_until"]).tzinfo is None:
                 raise ValueError("valid_until needs timezone")
+    if not isinstance(case.get("pledges"), list):
+        raise ValueError("bond case requires pledges")
+    pledge_ids: set[str] = set()
+    for pledge in case["pledges"]:
+        if not isinstance(pledge, dict) or not all(pledge.get(key) for key in
+            ("pledge_id", "bid_id", "instrument_id", "amount", "posted_at")):
+            raise ValueError("bond case has incomplete pledge")
+        if pledge["pledge_id"] in pledge_ids or pledge["bid_id"] not in bid_ids or pledge["instrument_id"] not in instrument_ids:
+            raise ValueError("pledge identity is invalid")
+        pledge_ids.add(pledge["pledge_id"])
+        _amount(pledge["amount"])
+        if datetime.fromisoformat(pledge["posted_at"]).tzinfo is None:
+            raise ValueError("pledge posted_at needs timezone")
     return case
 
 
