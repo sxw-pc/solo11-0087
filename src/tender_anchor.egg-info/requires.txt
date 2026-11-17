@@ -1,0 +1,8 @@
+Flask<4,>=3.0
+requests<3,>=2.31
+beautifulsoup4<5,>=4.12
+soupsieve<3,>=2.5
+PyYAML<7,>=6.0
+
+[test]
+pytest<9,>=8.0
