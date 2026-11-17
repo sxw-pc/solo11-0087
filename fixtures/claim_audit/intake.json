@@ -4,17 +4,17 @@
     {
       "claim_id": "claim-A",
       "suspected_loss": "9",
-      "prior": "0.20"
+      "prior": "0.50"
     },
     {
       "claim_id": "claim-B",
       "suspected_loss": "8",
-      "prior": "0.10"
+      "prior": "0.30"
     },
     {
       "claim_id": "claim-C",
-      "suspected_loss": "1",
-      "prior": "0.70"
+      "suspected_loss": "7",
+      "prior": "0.20"
     }
   ],
   "sampling_contract": {
