@@ -14,6 +14,7 @@ from werkzeug.serving import make_server
 from .app_paths import (
     DEFAULT_CONFIG, DEFAULT_DATA, DEFAULT_RULES, DEMO_DATA, ensure_layout,
 )
+from .bid_intake import intake_bids, read_bids
 from .config import load_config, load_rules
 from .errors import AppError
 from .export import export_all
@@ -91,6 +92,14 @@ def _export(args: argparse.Namespace) -> int:
     return 0
 
 
+def _bid_intake(args: argparse.Namespace) -> int:
+    paths = ensure_layout(Path(args.data_dir))
+    with Store(paths.db_path) as store:
+        decisions = intake_bids(store, read_bids(args.bids))
+    _emit({"bids": decisions})
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tender_anchor",
@@ -118,6 +127,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     export = sub.add_parser("export", help="从已有 SQLite 重新生成 JSON/CSV")
     export.add_argument("--data-dir", default=str(DEFAULT_DATA))
+
+    bids = sub.add_parser("bid-intake", help="核对虚构投标信封与已采集公告")
+    bids.add_argument("--data-dir", default=str(DEFAULT_DATA))
+    bids.add_argument("--bids", required=True)
     return parser
 
 
@@ -138,6 +151,8 @@ def main(argv: list[str] | None = None) -> int:
             return _serve_review(args)
         if args.command == "export":
             return _export(args)
+        if args.command == "bid-intake":
+            return _bid_intake(args)
     except AppError as exc:
         _emit({"error": exc.to_dict()})
         return 2
