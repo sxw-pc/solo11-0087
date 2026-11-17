@@ -11,10 +11,11 @@ def prior_audit_preview(data:dict)->dict:
     notice=get_notice(data["notice_id"])
     if notice is None or notice["kind"]!="result":
         raise ValueError("audit needs a synthetic result notice")
-    scores={c["claim_id"]:Decimal(c["prior"])*Decimal(c["suspected_loss"])
-            for c in data["award_claims"]}
-    chosen=max(scores,key=lambda claim_id:(scores[claim_id],claim_id))
-    return {"claim_id":chosen,"expected_prevented":str(scores[chosen])}
+    scores={a["action_id"]:sum(Decimal(c["prior"])*Decimal(c["suspected_loss"])*
+                                Decimal(a["detection"][c["claim_id"]]) for c in data["award_claims"])
+            for a in data["audit_actions"]}
+    chosen=max(scores,key=lambda action_id:(scores[action_id],action_id))
+    return {"action_id":chosen,"expected_prevented":str(scores[chosen])}
 
 
 def main(argv=None)->int:

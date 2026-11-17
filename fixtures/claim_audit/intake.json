@@ -31,5 +31,39 @@
       "objective": "maximize_prior_expected_prevented",
       "min_expected_prevented": "1.5"
     }
-  }
+  },
+  "audit_actions": [
+    {
+      "action_id": "direct-A",
+      "detection": {
+        "claim-A": "1",
+        "claim-B": "0",
+        "claim-C": "0"
+      }
+    },
+    {
+      "action_id": "direct-B",
+      "detection": {
+        "claim-A": "0",
+        "claim-B": "1",
+        "claim-C": "0"
+      }
+    },
+    {
+      "action_id": "direct-C",
+      "detection": {
+        "claim-A": "0",
+        "claim-B": "0",
+        "claim-C": "1"
+      }
+    },
+    {
+      "action_id": "cross-check",
+      "detection": {
+        "claim-A": "0.8",
+        "claim-B": "0.8",
+        "claim-C": "0"
+      }
+    }
+  ]
 }
