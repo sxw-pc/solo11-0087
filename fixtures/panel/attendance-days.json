@@ -1,0 +1,1111 @@
+{
+  "version": 1,
+  "cohort_id": "PANEL-ATTENDANCE-2026",
+  "reviewer_ids": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5"
+  ],
+  "sampling_contract": "256 exchangeable independent local evaluation days; correlated same-day absences are retained jointly",
+  "observed_pattern_counts": {
+    "all_present": 224,
+    "R4_only": 28,
+    "R4_R5": 4
+  },
+  "days": [
+    {
+      "day_id": "D001",
+      "absent_reviewers": [
+        "R4",
+        "R5"
+      ]
+    },
+    {
+      "day_id": "D002",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D003",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D004",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D005",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D006",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D007",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D008",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D009",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D010",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D011",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D012",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D013",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D014",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D015",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D016",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D017",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D018",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D019",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D020",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D021",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D022",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D023",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D024",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D025",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D026",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D027",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D028",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D029",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D030",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D031",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D032",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D033",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D034",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D035",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D036",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D037",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D038",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D039",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D040",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D041",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D042",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D043",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D044",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D045",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D046",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D047",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D048",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D049",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D050",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D051",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D052",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D053",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D054",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D055",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D056",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D057",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D058",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D059",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D060",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D061",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D062",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D063",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D064",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D065",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D066",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D067",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D068",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D069",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D070",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D071",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D072",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D073",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D074",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D075",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D076",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D077",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D078",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D079",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D080",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D081",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D082",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D083",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D084",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D085",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D086",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D087",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D088",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D089",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D090",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D091",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D092",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D093",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D094",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D095",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D096",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D097",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D098",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D099",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D100",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D101",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D102",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D103",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D104",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D105",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D106",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D107",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D108",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D109",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D110",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D111",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D112",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D113",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D114",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D115",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D116",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D117",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D118",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D119",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D120",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D121",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D122",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D123",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D124",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D125",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D126",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D127",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D128",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D129",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D130",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D131",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D132",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D133",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D134",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D135",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D136",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D137",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D138",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D139",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D140",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D141",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D142",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D143",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D144",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D145",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D146",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D147",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D148",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D149",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D150",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D151",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D152",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D153",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D154",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D155",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D156",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D157",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D158",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D159",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D160",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D161",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D162",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D163",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D164",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D165",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D166",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D167",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D168",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D169",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D170",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D171",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D172",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D173",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D174",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D175",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D176",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D177",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D178",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D179",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D180",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D181",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D182",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D183",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D184",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D185",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D186",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D187",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D188",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D189",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D190",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D191",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D192",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D193",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D194",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D195",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D196",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D197",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D198",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D199",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D200",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D201",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D202",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D203",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D204",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D205",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D206",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D207",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D208",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D209",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D210",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D211",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D212",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D213",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D214",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D215",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D216",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D217",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D218",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D219",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D220",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D221",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D222",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D223",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D224",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D225",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D226",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D227",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D228",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D229",
+      "absent_reviewers": [
+        "R4"
+      ]
+    },
+    {
+      "day_id": "D230",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D231",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D232",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D233",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D234",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D235",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D236",
+      "absent_reviewers": [
+        "R4",
+        "R5"
+      ]
+    },
+    {
+      "day_id": "D237",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D238",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D239",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D240",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D241",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D242",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D243",
+      "absent_reviewers": [
+        "R4",
+        "R5"
+      ]
+    },
+    {
+      "day_id": "D244",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D245",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D246",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D247",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D248",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D249",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D250",
+      "absent_reviewers": [
+        "R4",
+        "R5"
+      ]
+    },
+    {
+      "day_id": "D251",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D252",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D253",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D254",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D255",
+      "absent_reviewers": []
+    },
+    {
+      "day_id": "D256",
+      "absent_reviewers": []
+    }
+  ]
+}

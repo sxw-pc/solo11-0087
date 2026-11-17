@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "notice_id": "TA-2026-0001",
+  "lots": [
+    {
+      "lot_id": "LOT-A",
+      "seats": 2,
+      "priority": "normal",
+      "draft_reviewers": [
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "lot_id": "LOT-B",
+      "seats": 2,
+      "priority": "urgent",
+      "draft_reviewers": []
+    }
+  ],
+  "reviewers": [
+    {
+      "reviewer_id": "R1",
+      "eligible_lots": [
+        "LOT-A",
+        "LOT-B"
+      ],
+      "capacity": 1
+    },
+    {
+      "reviewer_id": "R2",
+      "eligible_lots": [
+        "LOT-A",
+        "LOT-B"
+      ],
+      "capacity": 1
+    },
+    {
+      "reviewer_id": "R3",
+      "eligible_lots": [
+        "LOT-A"
+      ],
+      "capacity": 1
+    },
+    {
+      "reviewer_id": "R4",
+      "eligible_lots": [
+        "LOT-B"
+      ],
+      "capacity": 1
+    },
+    {
+      "reviewer_id": "R5",
+      "eligible_lots": [
+        "LOT-B"
+      ],
+      "capacity": 1
+    }
+  ],
+  "incompatibilities": [
+    [
+      "R1",
+      "R3"
+    ],
+    [
+      "R2",
+      "R3"
+    ]
+  ],
+  "contracts": [
+    {
+      "contract_id": "frozen_signed",
+      "locked_lots": [
+        "LOT-A"
+      ],
+      "required_lots": [
+        "LOT-A",
+        "LOT-B"
+      ]
+    },
+    {
+      "contract_id": "replan_draft",
+      "locked_lots": [],
+      "required_lots": [
+        "LOT-A",
+        "LOT-B"
+      ]
+    }
+  ],
+  "absence_scenarios": [
+    {
+      "scenario_id": "R4-unavailable",
+      "reviewer_ids": [
+        "R4"
+      ]
+    },
+    {
+      "scenario_id": "R5-unavailable",
+      "reviewer_ids": [
+        "R5"
+      ]
+    }
+  ]
+}

@@ -1,5 +1,15 @@
 # 标讯锚（tender-anchor）
 
+隔离业务素材还提供 `fixtures/panel/schedule.json`、
+`fixtures/panel/schedule-conflict.json` 与
+`src/tender_anchor/panel_schedule.py::preview_schedule`。它在合成招标编号下
+读取分项评审席位、评委资格和容量，给出确定性的先到先配预览；
+缺席场景、评委互斥与既有草案仅保留为输入证据，目前不签发排班承诺。
+`src/tender_anchor/panel_commit.py::preview_commitment` 接受预览及同一公告的合同/缺席证据，保留待核承诺位。
+`panel_attendance.py::read_attendance/preview_attendance` 读取 256 个合成评审日的联合缺席记录，保留
+R4 单人缺席和 R4/R5 同日缺席频数；目前不把频数换成风险保证。
+可运行 `PYTHONPATH=src python -B -m tender_anchor.panel_schedule --case fixtures/panel/schedule.json`。
+
 隔离业务素材还提供 `fixtures/panel/case.json` 和
 `src/tender_anchor/panel_intake.py::preview_panel_case`，把离线评审票、备选评委与
 利益冲突披露关联到已采集招标及按时投标；入口保留原票，不预选中标人。
