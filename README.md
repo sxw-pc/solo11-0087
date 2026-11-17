@@ -1,5 +1,12 @@
 # 标讯锚（tender-anchor）
 
+隔离业务素材增加 `src/tender_anchor/capture_overlap.py` 与
+`fixtures/coverage/two-portals.json`：两条本地合成公告采集流各保留 100 份
+`notice_id`/`source_hash` 收据，另有 20 条运营方明示的跨门户别名收据。
+当前只核收据结构与同内容别名，报告字面 ID 重叠 40、别名 20；
+是否能以任何覆盖率声明对外发布仍留为 `coverage_decision=null`。
+可运行 `PYTHONPATH=src python -B -m tender_anchor.capture_overlap --panel fixtures/coverage/two-portals.json`。
+
 **标讯锚**是一个纯本地、配置驱动、可重复运行的标讯采集与核验工作台。它把一条完整的离线数据链路收敛为可测试的工程闭环：
 
 > 本机 mock 标讯门户 → 列表翻页 → 详情抽取 → 金额/日期归一化 → 更正公告关联 → 附件采集 → SQLite 幂等入库 → 质量规则复核 → 只读复核台与结构化导出
