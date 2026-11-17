@@ -1,0 +1,35 @@
+{
+  "notice_id": "TA-2026-0008",
+  "award_claims": [
+    {
+      "claim_id": "claim-A",
+      "suspected_loss": "9",
+      "prior": "0.20"
+    },
+    {
+      "claim_id": "claim-B",
+      "suspected_loss": "8",
+      "prior": "0.10"
+    },
+    {
+      "claim_id": "claim-C",
+      "suspected_loss": "1",
+      "prior": "0.70"
+    }
+  ],
+  "sampling_contract": {
+    "one_fraud_claim_at_a_time": true,
+    "one_audit": true,
+    "audit_detects_targeted_fraud": true
+  },
+  "authorized_contracts": {
+    "deterrence_cover": {
+      "objective": "minimize_worst_undetected_loss",
+      "max_worst_loss": "5"
+    },
+    "recovery_yield": {
+      "objective": "maximize_prior_expected_prevented",
+      "min_expected_prevented": "1.5"
+    }
+  }
+}
