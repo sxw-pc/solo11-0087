@@ -1,0 +1,81 @@
+{
+  "TA-2026-0001": {
+    "kind": "tender",
+    "title": "滨河片区智慧照明设备采购项目招标公告",
+    "project_code": "YC-BH-2026-1101",
+    "region": "示例市滨河片区",
+    "purchaser": "示例市滨河片区市政设施服务中心",
+    "agency": "示例澄明招标咨询有限公司",
+    "publish_at": "2026-11-02T00:00:00+08:00",
+    "deadline_at": "2026-12-01T09:30:00+08:00",
+    "budget_amount": "1280000.00",
+    "award_amount": null,
+    "attachments": ["example_budget.csv", "example_terms.txt"],
+    "related_notice_id": "",
+    "correction_changes": {}
+  },
+  "TA-2026-0002": {
+    "kind": "tender",
+    "title": "示例市实验小学课桌椅更新采购项目（二次）招标公告",
+    "publish_at": "2026-11-03T00:00:00+08:00",
+    "deadline_at": "2026-12-03T14:00:00+08:00",
+    "budget_amount": "860500.00",
+    "attachments": ["example_terms.txt"],
+    "related_notice_id": ""
+  },
+  "TA-2026-0003": {
+    "kind": "correction",
+    "title": "滨河片区智慧照明设备采购项目更正公告",
+    "publish_at": "2026-11-06T00:00:00+08:00",
+    "deadline_at": "2026-12-05T09:30:00+08:00",
+    "budget_amount": "1350000.00",
+    "attachments": [],
+    "related_notice_id": "TA-2026-0001",
+    "correction_changes": {
+      "budget_amount": "1350000.00",
+      "deadline_at": "2026-12-05T09:30:00+08:00"
+    }
+  },
+  "TA-2026-0004": {
+    "kind": "result",
+    "publish_at": "2026-11-10T00:00:00+08:00",
+    "deadline_at": null,
+    "budget_amount": "860500.00",
+    "award_amount": "812000.00",
+    "attachments": [],
+    "related_notice_id": ""
+  },
+  "TA-2026-0005": {
+    "kind": "tender",
+    "publish_at": "2026-11-05T00:00:00+08:00",
+    "deadline_at": "2026-12-09T16:00:00+08:00",
+    "budget_amount": null,
+    "attachments": ["missing_attachment.txt"],
+    "related_notice_id": ""
+  },
+  "TA-2026-0006": {
+    "kind": "tender",
+    "publish_at": "2026-11-08T00:00:00+08:00",
+    "deadline_at": "2026-12-08T10:00:00+08:00",
+    "budget_amount": "1500000.00",
+    "attachments": ["example_notice.txt"],
+    "related_notice_id": ""
+  },
+  "TA-2026-0007": {
+    "kind": "correction",
+    "publish_at": "2026-11-12T00:00:00+08:00",
+    "deadline_at": "2026-12-12T10:00:00+08:00",
+    "budget_amount": "1480000.00",
+    "attachments": [],
+    "related_notice_id": "TA-2026-0006"
+  },
+  "TA-2026-0008": {
+    "kind": "result",
+    "publish_at": "2026-11-14T00:00:00+08:00",
+    "deadline_at": null,
+    "budget_amount": "620000.00",
+    "award_amount": "598000.00",
+    "attachments": ["example_budget.csv"],
+    "related_notice_id": ""
+  }
+}

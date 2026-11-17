@@ -1,0 +1,29 @@
+# 标讯锚采集配置（默认只允许 loopback）
+portal:
+  base_url: "http://127.0.0.1:5810"
+  list_path: "/notices"
+  allowed_hosts:
+    - "127.0.0.1"
+    - "localhost"
+    - "::1"
+  timeout_seconds: 5.0
+  page_size: 3
+  max_pages: 10
+  user_agent: "tender-anchor-local/1.0"
+
+limits:
+  max_response_bytes: 1048576
+  max_attachment_bytes: 524288
+
+selectors:
+  list_item: "ul.notice-list li.notice-item"
+  list_link: "a.notice-link"
+  list_title: "span.notice-title"
+  list_date: "span.notice-date"
+  list_kind: "span.notice-kind"
+  next_page: "nav.pagination a.next-page"
+  detail_title: "h1.notice-title"
+  meta_row: "table.notice-meta tr"
+  body: "div.notice-body"
+  attachments: "section.attachments a.attachment-link"
+  correction_diff: "table.correction-diff tr"

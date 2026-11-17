@@ -1,0 +1,16 @@
+portal:
+  base_url: "http://127.0.0.1:5810"
+  list_path: "/notices"
+  allowed_hosts: ["127.0.0.1"]
+selectors:
+  list_item: "ul.notice-list li.notice-item["
+  list_link: "a.notice-link"
+  list_title: "span.notice-title"
+  list_date: "span.notice-date"
+  list_kind: "span.notice-kind"
+  next_page: "nav.pagination a.next-page"
+  detail_title: "h1.notice-title"
+  meta_row: "table.notice-meta tr"
+  body: "div.notice-body"
+  attachments: "section.attachments a.attachment-link"
+  correction_diff: "table.correction-diff tr"

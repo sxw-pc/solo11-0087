@@ -1,0 +1,13 @@
+# 复核规则。字段名与 notices 表规范字段一致。
+required_fields:
+  - "title"
+  - "project_code"
+  - "region"
+  - "purchaser"
+  - "agency"
+  - "publish_at"
+  - "deadline_at"
+  - "budget_amount"
+
+min_budget: 1000
+max_budget: 500000000
