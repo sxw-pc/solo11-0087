@@ -9,11 +9,13 @@ from pathlib import Path
 from typing import Any
 
 from .app_paths import DataPaths, atomic_write_text, ensure_within, safe_filename
+from .contract_intake import list_contract_reviews
 from .errors import ExportError
 from .normalize import now_iso
 from .store import Store
 
 EXPORT_SCHEMA_VERSION = 1
+CONTRACT_EXPORT_SCHEMA_VERSION = 1
 CSV_COLUMNS = (
     "notice_id", "kind", "kind_label", "title", "project_code", "region",
     "purchaser", "agency", "publish_at", "deadline_at", "budget_amount",
@@ -163,13 +165,28 @@ def _write_csv(path: Path, store: Store) -> int:
 def export_all(store: Store, paths: DataPaths) -> dict[str, Any]:
     json_path = ensure_within(paths.root, paths.exports / "notices.json", label="export")
     csv_path = ensure_within(paths.root, paths.exports / "notices.csv", label="export")
+    contracts_path = ensure_within(
+        paths.root, paths.exports / "contracts.json", label="export"
+    )
     _write_json(json_path, build_export(store))
     csv_count = _write_csv(csv_path, store)
+    contracts = list_contract_reviews(store)
+    _write_json(
+        contracts_path,
+        {
+            "schema_version": CONTRACT_EXPORT_SCHEMA_VERSION,
+            "generated_at": now_iso(),
+            "contract_count": len(contracts),
+            "contracts": contracts,
+        },
+    )
     return {
         "json_path": paths.relative(json_path),
         "csv_path": paths.relative(csv_path),
         "csv_rows": csv_count,
         "notice_count": store.count("notices"),
+        "contracts_json_path": paths.relative(contracts_path),
+        "contract_count": len(contracts),
     }
 
 

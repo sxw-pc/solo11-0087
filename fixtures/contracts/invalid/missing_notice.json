@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "contract": {"contract_id":"C-101","notice_id":"TA-2026-9999","supplier_id":"supplier-a","award_at":"2026-12-10T10:00:00+08:00","award_amount":"100000.00","acceptance_profile":"segmented_conditional"},
+  "milestones": [
+    {"milestone_id":"M1","kind":"hardware","units":1,"unit_amount":"100000.00","amount":"100000.00","due_at":"2027-01-10T18:00:00+08:00"}
+  ],
+  "events": [
+    {"event_id":"D1","contract_id":"C-101","milestone_id":"M1","kind":"delivered","at":"2027-01-08T09:00:00+08:00","units":["U1"]}
+  ]
+}

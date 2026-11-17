@@ -16,6 +16,7 @@ from .app_paths import (
 )
 from .bid_intake import intake_bids, read_bids
 from .config import load_config, load_rules
+from .contract_intake import intake_contract_case, read_contract_case
 from .errors import AppError
 from .export import export_all
 from .mock_portal.app import create_mock_app
@@ -100,6 +101,14 @@ def _bid_intake(args: argparse.Namespace) -> int:
     return 0
 
 
+def _contract_intake(args: argparse.Namespace) -> int:
+    paths = ensure_layout(Path(args.data_dir))
+    with Store(paths.db_path) as store:
+        result = intake_contract_case(store, read_contract_case(args.case))
+    _emit(result)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tender_anchor",
@@ -131,6 +140,12 @@ def build_parser() -> argparse.ArgumentParser:
     bids = sub.add_parser("bid-intake", help="核对虚构投标信封与已采集公告")
     bids.add_argument("--data-dir", default=str(DEFAULT_DATA))
     bids.add_argument("--bids", required=True)
+
+    contract = sub.add_parser(
+        "contract-intake", help="裁定本地授标合同的逐件验收与里程碑应付"
+    )
+    contract.add_argument("--data-dir", default=str(DEFAULT_DATA))
+    contract.add_argument("--case", required=True)
     return parser
 
 
@@ -153,6 +168,8 @@ def main(argv: list[str] | None = None) -> int:
             return _export(args)
         if args.command == "bid-intake":
             return _bid_intake(args)
+        if args.command == "contract-intake":
+            return _contract_intake(args)
     except AppError as exc:
         _emit({"error": exc.to_dict()})
         return 2

@@ -188,6 +188,38 @@ notices 1 ─── n attachments
 
 外部地址、重定向、HTTP 错误等安全/传输事件会写审计；正常请求的留档由 `raw_snapshots` 和列表归档路径体现。
 
+### `contract_cases`（合同验收裁定，由 `contract-intake` 懒建）
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `contract_id` | TEXT PK | 本地授标合同编号 |
+| `profile` | TEXT | 授权验收合同：`segmented_conditional` / `whole_strict` |
+| `notice_id` | TEXT | 关联的已采集招标公告 |
+| `identity_json` | TEXT | 合同+里程碑的规范化身份（变更即冲突） |
+| `notice_source_hash` | TEXT | 首次裁定时的公告来源哈希 |
+
+### `contract_events`
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `event_id` | TEXT | 证据事件编号，与 `contract_id` 联合主键 |
+| `contract_id` | TEXT | 所属合同 |
+| `seq` | INTEGER | 导入顺序（裁定按此重放） |
+| `payload_json` | TEXT | 规范化事件内容（同 ID 不同内容即冲突） |
+| `decision_json` | TEXT | 裁定：`admitted` / `held` / `rejected` 及理由、效果、收据 |
+
+### `contract_receipts`
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `receipt_id` | TEXT PK | `RCP-<合同>-<序号>`，只增不改 |
+| `contract_id` / `milestone_id` / `unit_id` | TEXT | 归属（里程碑级收据 `unit_id` 为空） |
+| `amount` | TEXT | 金额；`adjustment` 收据为负，用于迟到拒收/补证 |
+| `kind` | TEXT | `payable` / `adjustment` |
+| `trigger_event_id` | TEXT | 触发签发的事件 |
+| `effective_at` | TEXT | 生效时间（取触发事件的证据时间，不倒写） |
+| `detail_json` | TEXT | 证据链细节（如 M2 的原始检验事件与时间） |
+
 ## 3. 导出 JSON
 
 顶层：

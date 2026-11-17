@@ -1,8 +1,11 @@
 # 标讯锚（tender-anchor）
 
-隔离业务素材包含 `fixtures/contracts/delivery_case.json` 与
-`src/tender_anchor/contract_intake.py::preview_contract_case`：它把本地授标合同、
-两项里程碑及交付/检验事件关联到已采集招标公告，尚不裁定验收或应付。
+隔离业务素材包含 `fixtures/contracts/` 与
+`src/tender_anchor/contract_intake.py`：`read_contract_case`/`preview_contract_case`
+把本地授标合同、里程碑及交付/检验事件关联到已采集招标公告并保留原始事件；
+`intake_contract_case` 在两种明确授权的验收合同（分段+条件验收、整段+严格顺序）下
+裁定逐件验收、替换与里程碑应付，签发不可改写的收据，迟到的拒收/补证只追加
+新的验收/调整记录，复核结论随 `exports/contracts.json` 导出。
 
 **标讯锚**是一个纯本地、配置驱动、可重复运行的标讯采集与核验工作台。它把一条完整的离线数据链路收敛为可测试的工程闭环：
 
@@ -59,8 +62,12 @@ python -m tender_anchor crawl
 # 启动只读复核台（127.0.0.1:5811）
 python -m tender_anchor serve-review --data-dir data
 
-# 从已有数据库重新生成 data/exports/notices.json 与 notices.csv
+# 从已有数据库重新生成 data/exports/notices.{json,csv} 与 contracts.json
 python -m tender_anchor export --data-dir data
+
+# 裁定本地授标合同的逐件验收与里程碑应付（离线、幂等、可重放）
+python -m tender_anchor contract-intake --data-dir data \
+  --case fixtures/contracts/delivery_segmented_conditional.json
 ```
 
 演示数据默认写入 `data_demo/`，手工采集默认写入 `data/`。复核台可以指向任一数据目录，例如：
@@ -78,7 +85,8 @@ python -m tender_anchor serve-review --data-dir data_demo
 ├── attachments/                   # 附件内容（哈希前缀命名）
 ├── exports/
 │   ├── notices.json               # 固定字段顺序的机器可读导出
-│   └── notices.csv                # 固定列顺序的表格导出
+│   ├── notices.csv                # 固定列顺序的表格导出
+│   └── contracts.json             # 合同验收裁定、收据台账与待补义务
 └── reports/
     └── run-<run_id>.json          # 本次运行台账与稳定错误列表
 ```
@@ -95,6 +103,7 @@ SQLite 中保存运行台账、字段来源、原始响应哈希、版本快照�
 - **附件采集**：只下载白名单内链接，防目录穿越，按 SHA-256 命名，保留成功/失败原因。
 - **幂等入库**：同一公告相同 HTML 不新增版本；内容变化时版本号递增并保留历史。
 - **质量复核**：必填字段、预算区间、截止时间早于发布时间、附件失败、结果公告缺少成交信息、更正原公告不存在等规则。
+- **合同验收裁定**：两种明确授权的验收合同（分段+条件验收 `segmented_conditional`、整段+严格顺序 `whole_strict`）；逐件交付/检验/替换记账，替换件不可双计、不可跨里程碑复用；跨里程碑依赖决定调试里程碑何时生效；迟到证据只追加调整收据，已签发收据不可改写；重复导入重放原裁定，同 ID 不同件号/结果即冲突。
 - **只读复核台**：概览、公告列表/详情、复核队列、运行台账、审计事件、JSON/CSV 下载；不提供任何写接口。
 
 ## 项目结构
