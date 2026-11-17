@@ -7,6 +7,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from .attribution import conclude_rounds
 from .errors import StoreError
 
 
@@ -17,6 +18,7 @@ class StoreQueriesMixin:
         allowed = {
             "notices", "attachments", "corrections", "notice_revisions",
             "raw_snapshots", "review_items", "runs", "field_sources", "audit_events",
+            "attributions", "round_candidates",
         }
         if table not in allowed:
             raise StoreError("STORE_QUERY", f"不允许的统计表：{table}")
@@ -89,12 +91,38 @@ class StoreQueriesMixin:
             "SELECT * FROM corrections WHERE correction_notice_id=? OR original_notice_id=? "
             "ORDER BY correction_notice_id", (notice_id, notice_id),
         ).fetchall()
-        result = []
-        for row in rows:
-            item = dict(row)
-            item["changes"] = json.loads(item.pop("changes_json"))
-            result.append(item)
-        return result
+        return [self._correction_dict(row) for row in rows]
+
+    def list_corrections(self) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT * FROM corrections ORDER BY correction_notice_id"
+        ).fetchall()
+        return [self._correction_dict(row) for row in rows]
+
+    @staticmethod
+    def _correction_dict(row: sqlite3.Row) -> dict[str, Any]:
+        item = dict(row)
+        item["changes"] = json.loads(item.pop("changes_json"))
+        return item
+
+    def list_attributions(self) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT * FROM attributions ORDER BY result_notice_id"
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_attribution(self, result_notice_id: str) -> dict[str, Any] | None:
+        row = self.connection.execute(
+            "SELECT * FROM attributions WHERE result_notice_id=?", (result_notice_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def get_round_candidates(self, result_notice_id: str) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT * FROM round_candidates WHERE result_notice_id=? "
+            "ORDER BY tender_notice_id", (result_notice_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
 
     def get_review_items(
         self, *, status: str | None = None, notice_id: str | None = None
@@ -130,14 +158,26 @@ class StoreQueriesMixin:
         notice = self.get_notice(notice_id)
         if notice is None:
             return None
-        return {
+        bundle = {
             "notice": notice,
             "attachments": self.get_attachments(notice_id),
             "corrections": self.get_corrections(notice_id),
             "field_sources": self.get_field_sources(notice_id),
             "review_items": self.get_review_items(notice_id=notice_id),
             "snapshots": self.get_snapshots(notice_id),
+            "attribution": None,
+            "candidates": [],
+            "round": None,
         }
+        if notice["kind"] == "result":
+            bundle["attribution"] = self.get_attribution(notice_id)
+            bundle["candidates"] = self.get_round_candidates(notice_id)
+        elif notice["kind"] == "tender":
+            rounds = conclude_rounds(
+                [notice], self.list_corrections(), self.list_attributions()
+            )
+            bundle["round"] = rounds[0] if rounds else None
+        return bundle
 
     def stats(self) -> dict[str, Any]:
         kinds = {

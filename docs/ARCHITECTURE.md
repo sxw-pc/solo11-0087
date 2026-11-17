@@ -45,9 +45,11 @@ pipeline.run_crawl
 | `attachments.py` | 附件下载、安全文件名、大小限制、内容哈希、本地路径 |
 | `models.py` | 入库记录与运行摘要数据结构 |
 | `schema.py` | SQLite DDL 与索引 |
-| `store.py` | 写入：运行、公告、版本、原始快照、附件、更正、复核状态、审计 |
+| `store.py` | 写入：运行、公告、版本、原始快照、附件、更正、归属证据、复核状态、审计 |
 | `store_queries.py` | 查询与只读连接；供复核台、导出、测试使用 |
-| `rules.py` | 领域质量规则；输入只有规范化记录，不发起网络 |
+| `attribution.py` | 结果归属引擎：候选资格、证据等级、两种授权口径的轮次结论 |
+| `attribution_config.py` | 本地显式归属清单的加载与校验 |
+| `rules.py` | 领域质量规则；输入只有规范化记录与归属结论，不发起网络 |
 | `export.py` | JSON/CSV 导出、运行报告、固定排序 |
 | `pipeline.py` | 一次采集的生命周期、事务边界、失败收尾 |
 | `pipeline_helpers.py` | 分页、字段归一化、来源构造、单公告处理 |
@@ -69,10 +71,13 @@ pipeline.run_crawl
    - 抽取原始值；调用归一化函数，失败则记录运行错误但继续。
    - 下载附件；失败记录为附件行和复核候选，不中断整批。
    - 在同一事务内 upsert 公告、原始快照记录、附件、更正关系和字段来源。
-6. 对本次发现的成功公告执行质量规则。
-7. 将当前复核项同步为 `open`；之前存在但本次不再触发的项标记为 `resolved`。
-8. 写入运行汇总、错误列表；生成 JSON/CSV 与 `reports/run-*.json`。
-9. 关闭 HTTP 会话和 SQLite 连接。
+6. 归属引擎读取结果公告的身份字段（项目编号、采购单位、发布时间、关联原公告）与本地显式归属清单：
+   - 为每条结果 × 每个招标轮次生成候选资格证据并幂等写入 `round_candidates`。
+   - 为每条结果给出归属结论写入 `attributions`：公告自身引用与本地清单是严格台账证据；唯一一致候选只构成辅助核验的推断证据；来源冲突保持冲突。
+7. 对本次发现的成功公告执行质量规则（含缺结果、推断待核、归属歧义等复核项）。
+8. 将当前复核项同步为 `open`；之前存在但本次不再触发的项标记为 `resolved`。
+9. 写入运行汇总、错误列表；生成 JSON/CSV（含 `rounds` 轮次结论）与 `reports/run-*.json`。
+10. 关闭 HTTP 会话和 SQLite 连接。
 
 单条公告的抽取或附件失败不阻断其余公告。列表、策略、数据库等不可恢复错误将整次运行标记为 `failed`。
 
@@ -97,6 +102,10 @@ pipeline.run_crawl
 ### 复核项
 
 以 `(notice_id, rule_code)` 唯一。当前仍触发的项保持/恢复 `open`；不再触发的项置为 `resolved` 并记录 `resolved_run`。复核项的 `created_run` 保留首次出现运行。
+
+### 归属证据与轮次候选
+
+`attributions` 以 `result_notice_id` 唯一，`round_candidates` 以 `(result_notice_id, tender_notice_id)` 唯一。每次运行重算并 upsert：相同输入只更新 `last_seen_run`，不新增行；候选集合缩小时删除失效候选行。`first_seen_run` 始终保留首次归属运行，重复采集不会重复关联。
 
 ### 运行
 

@@ -24,6 +24,7 @@ def _resolve_project_root() -> Path:
 PROJECT_ROOT = _resolve_project_root()
 DEFAULT_CONFIG = PROJECT_ROOT / "config" / "sources.yaml"
 DEFAULT_RULES = PROJECT_ROOT / "config" / "rules.yaml"
+DEFAULT_ATTRIBUTION = PROJECT_ROOT / "config" / "attribution.yaml"
 DEFAULT_DATA = PROJECT_ROOT / "data"
 DEMO_DATA = PROJECT_ROOT / "data_demo"
 BAD_FILENAME_RE = re.compile(r'[\\/:*?"<>|\x00-\x1f]')

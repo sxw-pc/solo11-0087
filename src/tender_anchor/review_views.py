@@ -7,6 +7,8 @@ import json
 from typing import Any
 from urllib.parse import quote
 
+from .attribution import EVIDENCE_LABELS, ROUND_LABELS, STATUS_LABELS
+
 KIND_LABELS = {"tender": "招标", "correction": "更正", "result": "结果", "other": "其他"}
 STYLE = """
 :root{--ink:#20262e;--muted:#65717e;--line:#d9e0e6;--accent:#0d6b5c;--bg:#f5f7f4;--warn:#9a5b00;--bad:#a32929}
@@ -124,6 +126,73 @@ def _rows_table(headers: list[str], rows: list[list[str]], empty: str = "无") -
     return f"<table><tr>{head}</tr>{body or f'<tr><td colspan={len(headers)}>{e(empty)}</td></tr>'}</table>"
 
 
+def _yesno(value: Any) -> str:
+    return "是" if value else "否"
+
+
+def _attribution_body(bundle: dict[str, Any]) -> str:
+    record = bundle.get("attribution")
+    if record is None:
+        return ""
+    evidence = EVIDENCE_LABELS.get(record["evidence_level"], record["evidence_level"])
+    if record["evidence_level"] == "inferred":
+        evidence += "（非源公告声明）"
+    rows = [
+        ["状态", e(STATUS_LABELS.get(record["status"], record["status"]))],
+        ["证据等级", e(evidence)],
+        ["归属招标轮次", _notice_link(record["chosen_notice_id"]) if record["chosen_notice_id"] else "—"],
+        ["公告自身引用", _notice_link(record["declared_notice_id"]) if record["declared_notice_id"] else "—"],
+        ["本地清单指向", _notice_link(record["listed_notice_id"]) if record["listed_notice_id"] else "—"],
+        ["推断候选", _notice_link(record["inferred_notice_id"]) if record["inferred_notice_id"] else "—"],
+        ["严格台账", e(ROUND_LABELS.get(record["strict_status"], record["strict_status"]))],
+        ["辅助核验", e(ROUND_LABELS.get(record["auxiliary_status"], record["auxiliary_status"]))],
+        ["原因码", f"<code>{e(record['reason_code'])}</code>" if record["reason_code"] else "—"],
+        ["说明", e(record["detail"])],
+    ]
+    candidates = [
+        [_notice_link(item["tender_notice_id"]), _yesno(item["same_project_code"]),
+         _yesno(item["same_purchaser"]), _yesno(item["publish_order_ok"]),
+         _yesno(item["corrections_ok"]), _yesno(item["eligible"])]
+        for item in bundle.get("candidates", [])
+    ]
+    return (
+        "<h2>归属证据</h2>" + _rows_table(["字段", "值"], rows)
+        + "<h3>轮次候选</h3>"
+        + _rows_table(
+            ["招标公告", "同项目编号", "同采购单位", "发布顺序", "更正一致", "可推断"],
+            candidates,
+        )
+    )
+
+
+def _round_body(bundle: dict[str, Any]) -> str:
+    round_info = bundle.get("round")
+    if round_info is None:
+        return ""
+
+    def mode_row(label: str, mode: dict[str, Any]) -> list[str]:
+        results = "、".join(
+            _notice_link(item) for item in mode["result_notice_ids"]
+        ) or "—"
+        evidence = mode["evidence_level"]
+        evidence_text = EVIDENCE_LABELS.get(evidence, "—") if evidence else "—"
+        return [
+            e(label),
+            e(ROUND_LABELS.get(mode["status"], mode["status"])),
+            results,
+            e(evidence_text),
+        ]
+
+    rows = [
+        mode_row("严格台账", round_info["strict"]),
+        mode_row("辅助核验", round_info["auxiliary"]),
+    ]
+    return (
+        "<h2>轮次结论</h2>"
+        + _rows_table(["授权口径", "结论", "关闭结果公告", "证据等级"], rows)
+    )
+
+
 def detail_body(bundle: dict[str, Any]) -> str:
     notice = bundle["notice"]
     meta = [
@@ -172,6 +241,8 @@ def detail_body(bundle: dict[str, Any]) -> str:
     ]
     return (
         _rows_table(["字段", "值"], meta)
+        + _attribution_body(bundle)
+        + _round_body(bundle)
         + "<h2>附件</h2>" + _rows_table(["文件名", "状态", "字节", "类型", "SHA-256", "错误码", "本地路径"], attachments)
         + "<h2>更正关系</h2>" + _rows_table(["更正公告", "原公告", "发布时间", "变更"], corrections)
         + "<h2>字段来源</h2>" + _rows_table(["字段", "原始值", "归一化", "抽取器", "选择器"], sources)

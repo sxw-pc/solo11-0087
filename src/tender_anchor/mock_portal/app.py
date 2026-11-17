@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from flask import Flask, abort, jsonify, render_template_string, request, send_from_directory
 
-from .fixtures import ATTACHMENT_DIR, get_notice, load_fixtures
+from .fixtures import ATTACHMENT_DIR, load_fixtures
 
 STYLE = """
 :root{color-scheme:light;--ink:#1f2933;--muted:#5c6b78;--line:#d8dee5;--accent:#0b6b5b;--paper:#f7f5ef}
@@ -62,6 +62,7 @@ DETAIL_BODY = """
 {% if notice.award_amount_raw %}<tr><th>成交金额</th><td>{{ notice.award_amount_raw }}</td></tr>{% endif %}
 {% if notice.winner %}<tr><th>成交供应商</th><td>{{ notice.winner }}</td></tr>{% endif %}
 {% if notice.correction %}<tr><th>关联原公告</th><td>{{ notice.correction.original_notice_id }}</td></tr>{% endif %}
+{% if notice.result and notice.result.original_notice_id %}<tr><th>关联原公告</th><td>{{ notice.result.original_notice_id }}</td></tr>{% endif %}
 </table>
 <div class="notice-body"><p>{{ notice.summary }}</p><p>本页面为离线评测生成的合成公告，不构成任何采购邀请。</p></div>
 {% if notice.correction %}
@@ -93,9 +94,12 @@ def _page_number(name: str, default: int, maximum: int | None = None) -> int:
     return value
 
 
-def create_mock_app() -> Flask:
+def create_mock_app(catalog: dict | None = None) -> Flask:
     app = Flask(__name__)
     app.config.update(JSON_AS_ASCII=False, MAX_CONTENT_LENGTH=1024 * 1024)
+
+    def current_catalog() -> dict:
+        return catalog if catalog is not None else load_fixtures()
 
     @app.before_request
     def only_loopback() -> None:
@@ -114,7 +118,7 @@ def create_mock_app() -> Flask:
     @app.get("/")
     @app.get("/notices")
     def notice_list():
-        catalog = load_fixtures()
+        catalog = current_catalog()
         page_size = _page_number("page_size", 3, 20)
         ordered = [catalog["notices"][key] for key in catalog["order"]]
         total = len(ordered)
@@ -138,8 +142,8 @@ def create_mock_app() -> Flask:
 
     @app.get("/notices/<notice_id>")
     def detail(notice_id: str):
-        catalog = load_fixtures()
-        notice = get_notice(notice_id)
+        catalog = current_catalog()
+        notice = catalog["notices"].get(notice_id)
         if notice is None:
             abort(404, description="公告不存在")
         return render_template_string(
@@ -151,12 +155,13 @@ def create_mock_app() -> Flask:
 
     @app.get("/attachments/<path:filename>")
     def attachment(filename: str):
-        if filename not in load_fixtures()["attachments"]:
+        if filename not in current_catalog()["attachments"]:
             abort(404, description="附件不存在")
         return send_from_directory(ATTACHMENT_DIR, filename, as_attachment=True)
 
     @app.get("/health")
     def health():
-        return jsonify({"status": "ok", "mode": "offline-mock", "fixtures": len(load_fixtures()["order"])})
+        return jsonify({"status": "ok", "mode": "offline-mock",
+                        "fixtures": len(current_catalog()["order"])})
 
     return app

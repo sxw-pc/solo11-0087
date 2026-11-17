@@ -9,17 +9,49 @@ from pathlib import Path
 from typing import Any
 
 from .app_paths import DataPaths, atomic_write_text, ensure_within, safe_filename
+from .attribution import conclude_rounds
 from .errors import ExportError
 from .normalize import now_iso
 from .store import Store
 
-EXPORT_SCHEMA_VERSION = 1
+EXPORT_SCHEMA_VERSION = 2
 CSV_COLUMNS = (
     "notice_id", "kind", "kind_label", "title", "project_code", "region",
     "purchaser", "agency", "publish_at", "deadline_at", "budget_amount",
     "budget_currency", "award_amount", "winner", "revision", "source_url",
     "source_sha256", "attachments_stored", "attachments_failed", "quality_codes",
+    "attributed_tender_id", "attribution_evidence", "attribution_status",
+    "round_strict_status", "round_auxiliary_status",
 )
+
+
+def _attribution_document(bundle: dict[str, Any]) -> dict[str, Any] | None:
+    record = bundle.get("attribution")
+    if record is None:
+        return None
+    return {
+        "status": record["status"],
+        "evidence_level": record["evidence_level"],
+        "tender_notice_id": record["chosen_notice_id"] or None,
+        "declared_notice_id": record["declared_notice_id"] or None,
+        "listed_notice_id": record["listed_notice_id"] or None,
+        "inferred_notice_id": record["inferred_notice_id"] or None,
+        "reason_code": record["reason_code"] or None,
+        "strict_status": record["strict_status"],
+        "auxiliary_status": record["auxiliary_status"],
+        "detail": record["detail"],
+        "candidates": [
+            {
+                "tender_notice_id": item["tender_notice_id"],
+                "same_project_code": bool(item["same_project_code"]),
+                "same_purchaser": bool(item["same_purchaser"]),
+                "publish_order_ok": bool(item["publish_order_ok"]),
+                "corrections_ok": bool(item["corrections_ok"]),
+                "eligible": bool(item["eligible"]),
+            }
+            for item in bundle.get("candidates", [])
+        ],
+    }
 
 
 def _notice_document(store: Store, notice: dict[str, Any]) -> dict[str, Any]:
@@ -66,6 +98,7 @@ def _notice_document(store: Store, notice: dict[str, Any]) -> dict[str, Any]:
         },
         "award": {"amount": notice["award_amount"], "winner": notice["winner"]},
         "related_notice_id": notice["related_notice_id"],
+        "attribution": _attribution_document(bundle),
         "content_excerpt": notice["content_excerpt"],
         "source": {
             "url": notice["source_url"],
@@ -99,14 +132,19 @@ def _notice_document(store: Store, notice: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_export(store: Store) -> dict[str, Any]:
-    notices = [
-        _notice_document(store, notice) for notice in store.list_notices()
-    ]
+    notices = store.list_notices()
+    documents = [_notice_document(store, notice) for notice in notices]
+    rounds = conclude_rounds(
+        [notice for notice in notices if notice["kind"] == "tender"],
+        store.list_corrections(),
+        store.list_attributions(),
+    )
     return {
         "schema_version": EXPORT_SCHEMA_VERSION,
         "generated_at": now_iso(),
-        "notice_count": len(notices),
-        "notices": notices,
+        "notice_count": len(documents),
+        "notices": documents,
+        "rounds": rounds,
     }
 
 
@@ -124,10 +162,24 @@ def _write_csv(path: Path, store: Store) -> int:
     buffer = io.StringIO(newline="")
     writer = csv.DictWriter(buffer, fieldnames=CSV_COLUMNS, lineterminator="\n")
     writer.writeheader()
+    notices = store.list_notices()
+    attributions = {
+        item["result_notice_id"]: item for item in store.list_attributions()
+    }
+    rounds = {
+        item["tender_notice_id"]: item
+        for item in conclude_rounds(
+            [notice for notice in notices if notice["kind"] == "tender"],
+            store.list_corrections(),
+            store.list_attributions(),
+        )
+    }
     count = 0
-    for notice in store.list_notices():
+    for notice in notices:
         attachments = store.get_attachments(notice["notice_id"])
         quality = store.get_review_items(notice_id=notice["notice_id"])
+        attribution = attributions.get(notice["notice_id"], {})
+        round_info = rounds.get(notice["notice_id"], {})
         writer.writerow(
             {
                 "notice_id": notice["notice_id"],
@@ -150,6 +202,11 @@ def _write_csv(path: Path, store: Store) -> int:
                 "attachments_stored": sum(1 for item in attachments if item["status"] == "stored"),
                 "attachments_failed": sum(1 for item in attachments if item["status"] != "stored"),
                 "quality_codes": "|".join(sorted(item["rule_code"] for item in quality)),
+                "attributed_tender_id": attribution.get("chosen_notice_id", ""),
+                "attribution_evidence": attribution.get("evidence_level", ""),
+                "attribution_status": attribution.get("status", ""),
+                "round_strict_status": round_info.get("strict", {}).get("status", ""),
+                "round_auxiliary_status": round_info.get("auxiliary", {}).get("status", ""),
             }
         )
         count += 1

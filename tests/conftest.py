@@ -23,24 +23,36 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
 @pytest.fixture(scope="session")
-def portal_url():
+def portal_server():
     from werkzeug.serving import make_server
 
     logging.getLogger("werkzeug").setLevel(logging.ERROR)
-    server = make_server("127.0.0.1", 0, create_mock_app(), threaded=True)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    url = f"http://127.0.0.1:{server.server_port}"
-    for _ in range(50):
-        try:
-            if requests.get(url + "/health", timeout=1).status_code == 200:
-                break
-        except requests.RequestException:
-            pass
-        thread.join(timeout=0.05)
-    yield url
-    server.shutdown()
-    thread.join(timeout=5)
+    servers = []
+
+    def start(app):
+        server = make_server("127.0.0.1", 0, app, threaded=True)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        url = f"http://127.0.0.1:{server.server_port}"
+        for _ in range(50):
+            try:
+                if requests.get(url + "/health", timeout=1).status_code == 200:
+                    break
+            except requests.RequestException:
+                pass
+            thread.join(timeout=0.05)
+        servers.append((server, thread))
+        return url
+
+    yield start
+    for server, thread in servers:
+        server.shutdown()
+        thread.join(timeout=5)
+
+
+@pytest.fixture(scope="session")
+def portal_url(portal_server):
+    return portal_server(create_mock_app())
 
 
 @pytest.fixture

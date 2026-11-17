@@ -59,6 +59,50 @@ class CorrectionRecord:
     source_url: str
 
 
+@dataclass(frozen=True)
+class AttributionEntry:
+    """One row of the local explicit attribution list (config-level evidence)."""
+
+    result_notice_id: str
+    tender_notice_id: str
+
+
+@dataclass(frozen=True)
+class AttributionList:
+    entries: tuple[AttributionEntry, ...]
+    source_path: str
+
+
+@dataclass(frozen=True)
+class RoundCandidateRecord:
+    """Per (result, tender) eligibility evidence used by the inference path."""
+
+    result_notice_id: str
+    tender_notice_id: str
+    same_project_code: bool
+    same_purchaser: bool
+    publish_order_ok: bool
+    corrections_ok: bool
+    eligible: bool
+
+
+@dataclass(frozen=True)
+class AttributionRecord:
+    """Attribution conclusion for one result notice, with evidence level."""
+
+    result_notice_id: str
+    declared_notice_id: str
+    listed_notice_id: str
+    inferred_notice_id: str
+    chosen_notice_id: str
+    evidence_level: str
+    status: str
+    reason_code: str
+    strict_status: str
+    auxiliary_status: str
+    detail: str
+
+
 @dataclass
 class CrawlSummary:
     run_id: str

@@ -1,6 +1,6 @@
 """SQLite schema for tender notices, provenance, and review state."""
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS schema_meta (
     value TEXT NOT NULL
 );
 
-INSERT OR IGNORE INTO schema_meta(key, value) VALUES ('schema_version', '1');
+INSERT INTO schema_meta(key, value) VALUES ('schema_version', '2')
+ON CONFLICT(key) DO UPDATE SET value=excluded.value;
 
 CREATE TABLE IF NOT EXISTS runs (
     run_id TEXT PRIMARY KEY,
@@ -103,6 +104,36 @@ CREATE TABLE IF NOT EXISTS corrections (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS round_candidates (
+    result_notice_id TEXT NOT NULL,
+    tender_notice_id TEXT NOT NULL,
+    same_project_code INTEGER NOT NULL,
+    same_purchaser INTEGER NOT NULL,
+    publish_order_ok INTEGER NOT NULL,
+    corrections_ok INTEGER NOT NULL,
+    eligible INTEGER NOT NULL,
+    first_seen_run TEXT NOT NULL,
+    last_seen_run TEXT NOT NULL,
+    PRIMARY KEY (result_notice_id, tender_notice_id)
+);
+
+CREATE TABLE IF NOT EXISTS attributions (
+    result_notice_id TEXT PRIMARY KEY,
+    declared_notice_id TEXT NOT NULL DEFAULT '',
+    listed_notice_id TEXT NOT NULL DEFAULT '',
+    inferred_notice_id TEXT NOT NULL DEFAULT '',
+    chosen_notice_id TEXT NOT NULL DEFAULT '',
+    evidence_level TEXT NOT NULL DEFAULT 'none',
+    status TEXT NOT NULL,
+    reason_code TEXT NOT NULL DEFAULT '',
+    strict_status TEXT NOT NULL,
+    auxiliary_status TEXT NOT NULL,
+    detail TEXT NOT NULL DEFAULT '',
+    first_seen_run TEXT NOT NULL,
+    last_seen_run TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS field_sources (
     notice_id TEXT NOT NULL,
     field_name TEXT NOT NULL,
@@ -144,4 +175,6 @@ CREATE INDEX IF NOT EXISTS idx_corrections_original ON corrections(original_noti
 CREATE INDEX IF NOT EXISTS idx_review_status ON review_items(status, severity);
 CREATE INDEX IF NOT EXISTS idx_audit_run ON audit_events(run_id);
 CREATE INDEX IF NOT EXISTS idx_revisions_notice ON notice_revisions(notice_id);
+CREATE INDEX IF NOT EXISTS idx_candidates_tender ON round_candidates(tender_notice_id);
+CREATE INDEX IF NOT EXISTS idx_attributions_chosen ON attributions(chosen_notice_id);
 """

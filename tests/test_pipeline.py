@@ -18,7 +18,7 @@ def test_full_crawl_is_complete_and_traceable(crawled):
     assert summary.notices_unchanged == 0
     assert summary.attachments_ok == 5
     assert summary.attachments_failed == 1
-    assert summary.review_open == 2
+    assert summary.review_open == 6
     assert summary.status == "completed_with_errors"
     assert any(item["code"] == "NORMALIZE_AMOUNT" for item in summary.errors)
     with Store(paths.db_path) as store:
@@ -27,6 +27,8 @@ def test_full_crawl_is_complete_and_traceable(crawled):
         assert store.count("raw_snapshots") == 8
         assert store.count("attachments") == 6
         assert store.count("corrections") == 2
+        assert store.count("attributions") == 2
+        assert store.count("round_candidates") == 8
         assert store.count("runs") == 1
         assert store.get_notice("TA-2026-0001")["budget_amount"] == "1280000.00"
         assert store.get_notice("TA-2026-0005")["budget_amount"] is None
@@ -45,13 +47,15 @@ def test_second_run_is_idempotent_and_exports_are_ordered(crawled, rules):
     second = run_crawl(config, rules, paths)
     assert second.notices_unchanged == 8
     assert second.notices_inserted == 0
-    assert second.review_open == 2
+    assert second.review_open == 6
     with Store(paths.db_path) as store:
         assert store.count("notices") == 8
         assert store.count("notice_revisions") == 8
         assert store.count("raw_snapshots") == 8
         assert store.count("attachments") == 6
-        assert store.count("review_items") == 2
+        assert store.count("attributions") == 2
+        assert store.count("round_candidates") == 8
+        assert store.count("review_items") == 6
         assert store.count("runs") == 2
     payload = json.loads((paths.exports / "notices.json").read_text(encoding="utf-8"))
     ids = [item["notice_id"] for item in payload["notices"]]

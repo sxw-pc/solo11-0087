@@ -1,0 +1,98 @@
+{
+  "portal_name": "示例标讯门户（归属隔离场景）",
+  "disclaimer": "本门户及全部数据均为虚构演示素材，不对应任何真实单位、项目或公告。",
+  "notices": [
+    {
+      "notice_id": "TA-2026-1001",
+      "kind": "tender",
+      "kind_label": "招标公告",
+      "title": "示例园区保洁服务采购项目招标公告",
+      "project_code": "YC-YQ-2026-1201",
+      "region": "示例市园区",
+      "purchaser": "示例园区服务中心",
+      "agency": "示例诚招采购代理有限公司",
+      "publish_date": "2026-11-01",
+      "deadline_raw": "2026年11月20日 10:00",
+      "budget_raw": "500,000.00元",
+      "summary": "园区道路与公共区域日常保洁服务，服务期一年。",
+      "attachments": []
+    },
+    {
+      "notice_id": "TA-2026-1002",
+      "kind": "correction",
+      "kind_label": "更正公告",
+      "title": "示例园区保洁服务采购项目更正公告",
+      "project_code": "YC-YQ-2026-1201",
+      "region": "示例市园区",
+      "purchaser": "示例园区服务中心",
+      "agency": "示例诚招采购代理有限公司",
+      "publish_date": "2026-11-04",
+      "deadline_raw": "2026年11月24日 10:00",
+      "budget_raw": "520,000.00元",
+      "summary": "调整预算与提交响应文件截止时间，其他内容不变。",
+      "attachments": []
+    },
+    {
+      "notice_id": "TA-2026-1003",
+      "kind": "tender",
+      "kind_label": "招标公告",
+      "title": "示例园区保洁服务采购项目（二次）招标公告",
+      "project_code": "YC-YQ-2026-1201",
+      "region": "示例市园区",
+      "purchaser": "示例园区服务中心",
+      "agency": "示例诚招采购代理有限公司",
+      "publish_date": "2026-11-07",
+      "deadline_raw": "2026年11月27日 10:00",
+      "budget_raw": "520,000.00元",
+      "summary": "一次招标流标后重新组织采购，服务范围不变。",
+      "attachments": []
+    },
+    {
+      "notice_id": "TA-2026-1004",
+      "kind": "correction",
+      "kind_label": "更正公告",
+      "title": "示例园区保洁服务采购项目（二次）更正公告",
+      "project_code": "YC-YQ-2026-1201",
+      "region": "示例市园区",
+      "purchaser": "示例园区服务中心",
+      "agency": "示例诚招采购代理有限公司",
+      "publish_date": "2026-11-09",
+      "deadline_raw": "2026年11月29日 10:00",
+      "budget_raw": "520,000.00元",
+      "summary": "调整提交响应文件截止时间，其他内容不变。",
+      "attachments": []
+    },
+    {
+      "notice_id": "TA-2026-1005",
+      "kind": "result",
+      "kind_label": "结果公告",
+      "title": "示例园区保洁服务采购项目结果公告",
+      "project_code": "YC-YQ-2026-1201",
+      "region": "示例市园区",
+      "purchaser": "示例园区服务中心",
+      "agency": "示例诚招采购代理有限公司",
+      "publish_date": "2026-11-12",
+      "deadline_raw": "",
+      "budget_raw": "520,000.00元",
+      "award_amount_raw": "498,000.00元",
+      "winner": "示例洁净环境服务有限公司",
+      "summary": "成交供应商已确定，公示期三个工作日。",
+      "attachments": []
+    }
+  ],
+  "corrections": {
+    "TA-2026-1002": {
+      "original_notice_id": "TA-2026-1001",
+      "changes": [
+        {"field": "budget_amount", "label": "预算金额", "value": "520,000.00元"},
+        {"field": "deadline_at", "label": "截止时间", "value": "2026年11月24日 10:00"}
+      ]
+    },
+    "TA-2026-1004": {
+      "original_notice_id": "TA-2026-1003",
+      "changes": [
+        {"field": "deadline_at", "label": "截止时间", "value": "2026年11月29日 10:00"}
+      ]
+    }
+  }
+}

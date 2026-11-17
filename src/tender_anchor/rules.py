@@ -8,7 +8,12 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Sequence
 
 from .config import RuleSettings
-from .models import AttachmentRecord, CorrectionRecord, NoticeRecord
+from .models import (
+    AttachmentRecord,
+    AttributionRecord,
+    CorrectionRecord,
+    NoticeRecord,
+)
 
 FIELD_LABELS = {
     "notice_id": "公告编号",
@@ -25,6 +30,7 @@ FIELD_LABELS = {
     "related_notice_id": "关联原公告",
 }
 RESULT_OPTIONAL = {"deadline_at"}
+ATTRIBUTION_SEVERITY = {"conflict": "error", "pending": "warning"}
 
 
 @dataclass(frozen=True)
@@ -73,6 +79,7 @@ def apply_rules(
     attachments: Sequence[AttachmentRecord],
     corrections: Sequence[CorrectionRecord],
     settings: RuleSettings,
+    attributions: Sequence[AttributionRecord] = (),
 ) -> list[RuleFinding]:
     findings: list[RuleFinding] = []
     known_ids = {notice.notice_id for notice in notices}
@@ -169,4 +176,77 @@ def apply_rules(
                     field_name="correction_changes",
                 )
             )
+    findings.extend(_attribution_findings(notices, corrections, attributions))
     return _dedupe(findings)
+
+
+def _attribution_findings(
+    notices: Sequence[NoticeRecord],
+    corrections: Sequence[CorrectionRecord],
+    attributions: Sequence[AttributionRecord],
+) -> list[RuleFinding]:
+    """缺结果/歧义/归属冲突复核项，由归属证据驱动。"""
+    findings: list[RuleFinding] = []
+    confirmed_by_tender: dict[str, list[AttributionRecord]] = {}
+    for item in attributions:
+        if item.status == "confirmed" and item.chosen_notice_id:
+            confirmed_by_tender.setdefault(item.chosen_notice_id, []).append(item)
+        else:
+            severity = ATTRIBUTION_SEVERITY.get(item.status) or "warning"
+            findings.append(
+                RuleFinding(
+                    notice_id=item.result_notice_id,
+                    rule_code=item.reason_code or "ATTRIBUTION_PENDING",
+                    severity=severity,
+                    message=item.detail or "结果公告归属待核",
+                    field_name="related_notice_id",
+                )
+            )
+    for notice in notices:
+        if notice.kind != "tender":
+            continue
+        closing = confirmed_by_tender.get(notice.notice_id, [])
+        if any(item.evidence_level in {"declared", "explicit_list"} for item in closing):
+            continue
+        inferred = sorted(
+            item.result_notice_id for item in closing if item.evidence_level == "inferred"
+        )
+        if inferred:
+            findings.append(
+                RuleFinding(
+                    notice_id=notice.notice_id,
+                    rule_code="TENDER_RESULT_INFERRED",
+                    severity="warning",
+                    message=(
+                        "结果归属为推断证据，严格台账待人工确认："
+                        + "、".join(inferred)
+                    ),
+                    field_name="related_notice_id",
+                )
+            )
+        else:
+            findings.append(
+                RuleFinding(
+                    notice_id=notice.notice_id,
+                    rule_code="TENDER_RESULT_MISSING",
+                    severity="warning",
+                    message="招标轮次缺少可信结果公告（严格台账与辅助核验均未关闭）",
+                    field_name="related_notice_id",
+                )
+            )
+    result_ids = {notice.notice_id for notice in notices if notice.kind == "result"}
+    for correction in corrections:
+        if correction.original_notice_id in result_ids:
+            findings.append(
+                RuleFinding(
+                    notice_id=correction.original_notice_id,
+                    rule_code="RESULT_SELF_REVISED",
+                    severity="warning",
+                    message=(
+                        f"结果公告自身被更正公告 {correction.correction_notice_id} 修订，"
+                        "归属与成交信息需复核"
+                    ),
+                    field_name="related_notice_id",
+                )
+            )
+    return findings

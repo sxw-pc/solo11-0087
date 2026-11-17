@@ -99,6 +99,7 @@ ERROR_CATALOG: dict[str, str] = {
     "PATH_ESCAPE": "输出路径越出数据目录。",
     "EXPORT_WRITE": "导出文件写入失败。",
     "RULE_CONFIG_INVALID": "复核规则配置无效。",
+    "ATTRIBUTION_CONFIG_INVALID": "本地显式归属清单配置无效。",
     "PIPELINE_NO_NOTICES": "采集流程未获得任何标讯。",
     "PIPELINE_FATAL": "采集流程发生不可恢复错误。",
 }

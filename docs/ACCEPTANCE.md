@@ -24,12 +24,12 @@ python -m tender_anchor demo --crawl
 - `summary.pages_fetched == 3`。
 - `summary.notices_seen == 8`、`notices_inserted == 8`（首次运行）。
 - `summary.attachments_ok == 5`、`attachments_failed == 1`。
-- `summary.review_open == 2`。
+- `summary.review_open == 6`。
 - `summary.status == "completed_with_errors"`，原因是 fixture 故意包含一条无法归一化的预算文本。
 - `summary.errors` 中存在 `NORMALIZE_AMOUNT`，target 指向 `TA-2026-0005#budget_amount`。
 - 生成 `data_demo/tender_anchor.sqlite3`、`raw/`、`attachments/`、`exports/notices.{json,csv}` 与 `reports/run-*.json`。
 
-`completed_with_errors` 不代表流程崩溃：8 条公告均已入库，1 个失败附件和 1 个缺失预算已进入复核队列。
+`completed_with_errors` 不代表流程崩溃：8 条公告均已入库，1 个失败附件、1 个缺失预算、2 个缺结果轮次和 2 个推断待核轮次已进入复核队列。
 
 ### 2.2 幂等复跑
 
@@ -38,9 +38,19 @@ python -m tender_anchor demo --crawl
 - `summary.notices_inserted == 0`。
 - `summary.notices_updated == 0`。
 - `summary.notices_unchanged == 8`。
-- 公告、版本、原始快照、附件、复核项数量不增加。
+- 公告、版本、原始快照、附件、归属证据、轮次候选、复核项数量不增加。
 - `runs` 数量随执行次数增加。
 - JSON/CSV 中公告顺序仍按 `notice_id` 稳定排序。
+
+### 2.3 结果归属与轮次结论
+
+演示数据不含显式归属清单（`config/attribution.yaml` 默认 `entries: []`）：
+
+- `TA-2026-0004` 的唯一一致候选是 `TA-2026-0002`：导出与复核台中证据等级为“推断归属”，严格台账 `pending`、辅助核验 `closed`，且不得写成源公告声明。
+- `TA-2026-0008` 同理推断归属 `TA-2026-0005`。
+- `TA-2026-0001`、`TA-2026-0006` 无任何结果，产生 `TENDER_RESULT_MISSING`。
+- `TA-2026-0002`、`TA-2026-0005` 产生 `TENDER_RESULT_INFERRED`（严格待核）。
+- 导出 JSON 顶层 `rounds` 给出每个招标轮次的严格/辅助两种结论；结果公告文档内含 `attribution` 证据块；复核台详情页与导出一致。
 
 ### 2.3 测试
 
@@ -60,7 +70,8 @@ python -m tender_anchor serve-review --data-dir data_demo
 
 - `/`：统计卡片、最近标讯、未处理复核项、导出入口。
 - `/notices`：类型和关键词过滤。
-- `/notices/TA-2026-0001`：元数据、附件、更正关系、字段来源、质量项、原始留档。
+- `/notices/TA-2026-0001`：元数据、轮次结论、附件、更正关系、字段来源、质量项、原始留档。
+- `/notices/TA-2026-0004`：归属证据（推断归属、严格待核）与轮次候选表。
 - `/review`：未处理/已解决复核项。
 - `/runs`：运行台账和错误 JSON。
 - `/audit`：审计事件。
@@ -79,6 +90,8 @@ python -m tender_anchor serve-review --data-dir data_demo
 | `test_store_idempotency.py` | 公告/版本/快照/附件/更正/复核项幂等与解决状态 |
 | `test_attachments.py` | 附件落盘、哈希、404、目录穿越、外部附件拒绝 |
 | `test_rules.py` | 必填、预算区间、截止时间、附件失败、结果缺失、更正关联、排序 |
+| `test_attribution.py` | 唯一推断、显式清单、公告引用、来源冲突、目标不匹配、结果早于招标、歧义、缺原招标、自身修订、清单校验 |
+| `test_attribution_pipeline.py` | 二次招标歧义、显式归属只关闭指定轮次、重复运行不重复关联、导出/台账/复核台一致 |
 | `test_pipeline.py` | 端到端、二次运行、导出顺序、外链阻断、重定向阻断 |
 | `test_web.py` | 页面、过滤、安全头、错误码、只读、下载、缺少导出 |
 
@@ -95,7 +108,7 @@ python -m tender_anchor serve-review --data-dir data_demo
 
 ## 5. 工程质量验收
 
-- Python 代码（含测试）总量在 2500–4500 行之间。
+- Python 代码（含测试）总量在 2500–6000 行之间。
 - 任何 Python 文件不超过 300 行。
 - 运行依赖均为常见本机包，无浏览器二进制、GPU、外部数据库。
 - 错误使用稳定错误码；运行错误可解释。

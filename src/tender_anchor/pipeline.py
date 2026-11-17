@@ -4,19 +4,32 @@ from __future__ import annotations
 
 from .app_paths import DataPaths, make_run_id
 from .attachments import AttachmentStore
+from .attribution import attribute_results
 from .config import AppConfig, RuleSettings
 from .errors import AppError, PipelineError
 from .export import export_all, write_run_report
 from .fetch import LoopbackPolicy, SafeFetcher
-from .models import AttachmentRecord, CorrectionRecord, CrawlSummary, NoticeRecord
+from .models import (
+    AttachmentRecord,
+    AttributionList,
+    CorrectionRecord,
+    CrawlSummary,
+    NoticeRecord,
+)
 from .normalize import now_iso
 from .pipeline_helpers import add_error, crawl_index, process_entry
 from .rules import apply_rules
 from .store import Store
 
 
-def run_crawl(config: AppConfig, rules: RuleSettings, paths: DataPaths) -> CrawlSummary:
+def run_crawl(
+    config: AppConfig,
+    rules: RuleSettings,
+    paths: DataPaths,
+    attribution: AttributionList | None = None,
+) -> CrawlSummary:
     """Run one deterministic crawl against the configured local portal."""
+    entries_config = attribution.entries if attribution is not None else ()
     run_id = make_run_id(config.fingerprint())
     summary = CrawlSummary(run_id=run_id, status="running", started_at=now_iso())
     store = Store(paths.db_path)
@@ -58,7 +71,12 @@ def run_crawl(config: AppConfig, rules: RuleSettings, paths: DataPaths) -> Crawl
             attachments.extend(item_attachments)
             if correction is not None:
                 corrections.append(correction)
-        findings = apply_rules(notices, attachments, corrections, rules)
+        candidates, attributions = attribute_results(
+            notices, corrections, entries_config
+        )
+        with store.transaction():
+            store.sync_attributions(candidates, attributions, run_id)
+        findings = apply_rules(notices, attachments, corrections, rules, attributions)
         with store.transaction():
             summary.review_open = store.sync_review_items(
                 [finding.to_store_dict() for finding in findings], run_id

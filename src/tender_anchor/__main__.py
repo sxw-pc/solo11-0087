@@ -12,8 +12,10 @@ from urllib.parse import urlsplit
 from werkzeug.serving import make_server
 
 from .app_paths import (
-    DEFAULT_CONFIG, DEFAULT_DATA, DEFAULT_RULES, DEMO_DATA, ensure_layout,
+    DEFAULT_ATTRIBUTION, DEFAULT_CONFIG, DEFAULT_DATA, DEFAULT_RULES, DEMO_DATA,
+    ensure_layout,
 )
+from .attribution_config import load_attribution
 from .config import load_config, load_rules
 from .errors import AppError
 from .export import export_all
@@ -34,24 +36,26 @@ def _portal_address(config) -> tuple[str, int]:
     return host, port
 
 
-def _crawl(config_path: str, rules_path: str, data_dir: Path) -> dict:
+def _crawl(config_path: str, rules_path: str, data_dir: Path, attribution_path: str) -> dict:
     config = load_config(config_path)
     rules = load_rules(rules_path)
+    attribution = load_attribution(attribution_path)
     paths = ensure_layout(data_dir)
-    summary = run_crawl(config, rules, paths)
+    summary = run_crawl(config, rules, paths, attribution)
     return summary.to_dict()
 
 
 def _demo(args: argparse.Namespace) -> int:
     config = load_config(args.config)
     rules = load_rules(args.rules)
+    attribution = load_attribution(args.attribution)
     host, port = _portal_address(config)
     server = make_server(host, port, create_mock_app(), threaded=True)
     thread = threading.Thread(target=server.serve_forever, name="mock-portal", daemon=True)
     thread.start()
     try:
         paths = ensure_layout(Path(args.data_dir))
-        summary = run_crawl(config, rules, paths)
+        summary = run_crawl(config, rules, paths, attribution)
         _emit(
             {
                 "demo": "completed",
@@ -102,11 +106,13 @@ def build_parser() -> argparse.ArgumentParser:
     demo.add_argument("--crawl", action="store_true", help="执行列表、详情、附件采集")
     demo.add_argument("--config", default=str(DEFAULT_CONFIG))
     demo.add_argument("--rules", default=str(DEFAULT_RULES))
+    demo.add_argument("--attribution", default=str(DEFAULT_ATTRIBUTION))
     demo.add_argument("--data-dir", default=str(DEMO_DATA))
 
     crawl = sub.add_parser("crawl", help="采集已启动的本机 mock 门户")
     crawl.add_argument("--config", default=str(DEFAULT_CONFIG))
     crawl.add_argument("--rules", default=str(DEFAULT_RULES))
+    crawl.add_argument("--attribution", default=str(DEFAULT_ATTRIBUTION))
     crawl.add_argument("--data-dir", default=str(DEFAULT_DATA))
 
     portal = sub.add_parser("serve-portal", help="启动 loopback mock 标讯门户")
@@ -130,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
                 parser.error("demo 需要配合 --crawl 执行完整采集")
             return _demo(args)
         if args.command == "crawl":
-            _emit(_crawl(args.config, args.rules, Path(args.data_dir)))
+            _emit(_crawl(args.config, args.rules, Path(args.data_dir), args.attribution))
             return 0
         if args.command == "serve-portal":
             return _serve_portal(args)

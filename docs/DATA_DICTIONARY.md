@@ -15,7 +15,9 @@ notices 1 ─── n attachments
     │   1 ─── n raw_snapshots
     │   1 ─── n field_sources
     │   n ─── n corrections（通过 correction_notice_id / original_notice_id）
-    └── 1 ─── n review_items
+    │   1 ─── n review_items
+    │   1 ─── 0..1 attributions（结果公告 → 招标轮次归属结论）
+    └── n ─── n round_candidates（结果 × 招标的候选资格证据）
 ```
 
 ## 2. 表定义
@@ -25,7 +27,7 @@ notices 1 ─── n attachments
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `key` | TEXT PK | 元数据键 |
-| `value` | TEXT | 当前 `schema_version=1` |
+| `value` | TEXT | 当前 `schema_version=2` |
 
 ### `runs`
 
@@ -144,6 +146,44 @@ notices 1 ─── n attachments
 }
 ```
 
+### `round_candidates`
+
+每条结果公告 × 每个招标轮次的候选资格证据，推断归属只使用 `eligible=1` 的行。
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `result_notice_id` | TEXT | 结果公告编号 |
+| `tender_notice_id` | TEXT | 招标公告编号 |
+| `same_project_code` | INTEGER | 项目编号一致且非空 |
+| `same_purchaser` | INTEGER | 采购单位一致且非空 |
+| `publish_order_ok` | INTEGER | 招标发布时间不晚于结果发布时间 |
+| `corrections_ok` | INTEGER | 该轮次全部更正均不晚于结果发布时间 |
+| `eligible` | INTEGER | 以上四项全部为真 |
+| `first_seen_run` / `last_seen_run` | TEXT | 首次/最近运行 |
+
+主键：`(result_notice_id, tender_notice_id)`。重复采集不新增行，只更新检查值与 `last_seen_run`。
+
+### `attributions`
+
+每条结果公告一行的归属结论，同时携带两种业务授权口径的状态。
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `result_notice_id` | TEXT PK | 结果公告编号 |
+| `declared_notice_id` | TEXT | 公告自身“关联原公告”引用，可为空 |
+| `listed_notice_id` | TEXT | 本地显式归属清单指向，可为空 |
+| `inferred_notice_id` | TEXT | 唯一候选推断指向，可为空 |
+| `chosen_notice_id` | TEXT | 最终归属招标轮次；未确认为空 |
+| `evidence_level` | TEXT | `declared` / `explicit_list` / `inferred` / `none` |
+| `status` | TEXT | `confirmed` / `conflict` / `pending` |
+| `reason_code` | TEXT | 未确认时的稳定原因码，确认为空 |
+| `strict_status` | TEXT | 严格台账口径：`closed` / `pending` |
+| `auxiliary_status` | TEXT | 辅助核验口径：`closed` / `pending` |
+| `detail` | TEXT | 人可读证据说明；推断明确标注“并非源公告声明” |
+| `first_seen_run` / `last_seen_run` / `updated_at` | TEXT | 运行与行更新时间 |
+
+稳定原因码：`RESULT_TENDER_MISSING`（缺原招标）、`RESULT_CANDIDATES_AMBIGUOUS`（多个候选）、`RESULT_BEFORE_TENDER`（结果早于招标）、`ATTRIBUTION_SOURCE_CONFLICT`（清单与公告引用冲突）、`ATTRIBUTION_TARGET_MISMATCH`（显式清单指向不匹配轮次）。`RESULT_SELF_REVISED`（结果公告自身被更正修订）以复核项形式出现在 `review_items`。
+
 ### `field_sources`
 
 | 字段 | 类型 | 说明 |
@@ -194,10 +234,11 @@ notices 1 ─── n attachments
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "generated_at": "2026-11-15T11:35:08+08:00",
   "notice_count": 8,
-  "notices": []
+  "notices": [],
+  "rounds": []
 }
 ```
 
@@ -213,6 +254,7 @@ notices 1 ─── n attachments
 | `budget` | object | `{amount, currency}` |
 | `award` | object | `{amount, winner}` |
 | `related_notice_id` | string | 关联原公告 |
+| `attribution` | object/null | 结果公告的归属证据块；非结果公告为 null |
 | `content_excerpt` | string | 正文摘要 |
 | `source` | object | `{url, sha256, first_seen_run, last_seen_run, revision}` |
 | `attachments` | array | 文件名、URL、哈希、大小、类型、状态、错误码、相对路径 |
@@ -220,16 +262,30 @@ notices 1 ─── n attachments
 | `field_sources` | array | 字段、原始值、规范化值、抽取器、选择器 |
 | `quality` | array | 规则码、级别、说明、状态 |
 
-排序：公告按 `notice_id`；附件按 `(filename, source_url)`；更正按 `correction_notice_id`；字段来源按 `field_name`。
+`attribution` 块字段：`status`、`evidence_level`、`tender_notice_id`、`declared_notice_id`、`listed_notice_id`、`inferred_notice_id`、`reason_code`、`strict_status`、`auxiliary_status`、`detail`、`candidates`（每项招标轮次的四项一致性检查与 `eligible`）。
+
+`rounds` 每项字段：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `tender_notice_id` | string | 招标轮次公告编号 |
+| `project_code` / `purchaser` / `publish_at` | string | 轮次元数据 |
+| `corrections` | array | 指向该轮次的更正公告编号，升序 |
+| `strict` | object | 严格台账结论：`status`、`result_notice_ids`、`evidence_level` |
+| `auxiliary` | object | 辅助核验结论，结构同上；额外接受 `inferred` 证据 |
+
+排序：公告按 `notice_id`；轮次按 `tender_notice_id`；附件按 `(filename, source_url)`；更正按 `correction_notice_id`；字段来源按 `field_name`。
 
 ## 4. 导出 CSV
 
 固定列：
 
-`notice_id, kind, kind_label, title, project_code, region, purchaser, agency, publish_at, deadline_at, budget_amount, budget_currency, award_amount, winner, revision, source_url, source_sha256, attachments_stored, attachments_failed, quality_codes`
+`notice_id, kind, kind_label, title, project_code, region, purchaser, agency, publish_at, deadline_at, budget_amount, budget_currency, award_amount, winner, revision, source_url, source_sha256, attachments_stored, attachments_failed, quality_codes, attributed_tender_id, attribution_evidence, attribution_status, round_strict_status, round_auxiliary_status`
 
 - 行按 `notice_id` 排序。
 - `quality_codes` 为去重排序后的规则码，以 `|` 连接。
+- `attributed_tender_id` / `attribution_evidence` / `attribution_status` 仅结果公告有值。
+- `round_strict_status` / `round_auxiliary_status` 仅招标公告有值，为 `closed` 或 `pending`。
 - 时间与金额保持数据库中的规范文本。
 
 ## 5. 附件本地命名

@@ -10,7 +10,10 @@ from typing import Any, Iterator, Sequence
 
 from .app_paths import ensure_dir
 from .errors import StoreError
-from .models import AttachmentRecord, CorrectionRecord, FieldSourceRecord, NoticeRecord
+from .models import (
+    AttachmentRecord, AttributionRecord, CorrectionRecord, FieldSourceRecord,
+    NoticeRecord, RoundCandidateRecord,
+)
 from .normalize import now_iso
 from .schema import SCHEMA_SQL
 from .store_queries import StoreQueriesMixin
@@ -211,6 +214,64 @@ class Store(StoreQueriesMixin):
              json.dumps(list(correction.changes), ensure_ascii=False, sort_keys=True),
              correction.source_url, run_id, run_id, now_iso()),
         )
+
+    def sync_attributions(
+        self,
+        candidates: Sequence[RoundCandidateRecord],
+        attributions: Sequence[AttributionRecord],
+        run_id: str,
+    ) -> None:
+        """Idempotently persist round candidates and attribution evidence."""
+        now = now_iso()
+        current = {(item.result_notice_id, item.tender_notice_id) for item in candidates}
+        for result_id in sorted({item.result_notice_id for item in attributions}):
+            rows = self.connection.execute(
+                "SELECT tender_notice_id FROM round_candidates WHERE result_notice_id=?",
+                (result_id,),
+            ).fetchall()
+            for row in rows:
+                if (result_id, row["tender_notice_id"]) not in current:
+                    self.connection.execute(
+                        "DELETE FROM round_candidates WHERE result_notice_id=? "
+                        "AND tender_notice_id=?", (result_id, row["tender_notice_id"]),
+                    )
+        for item in candidates:
+            self.connection.execute(
+                "INSERT INTO round_candidates(result_notice_id, tender_notice_id, "
+                "same_project_code, same_purchaser, publish_order_ok, corrections_ok, "
+                "eligible, first_seen_run, last_seen_run) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT(result_notice_id, tender_notice_id) DO UPDATE SET "
+                "same_project_code=excluded.same_project_code, "
+                "same_purchaser=excluded.same_purchaser, "
+                "publish_order_ok=excluded.publish_order_ok, "
+                "corrections_ok=excluded.corrections_ok, eligible=excluded.eligible, "
+                "last_seen_run=excluded.last_seen_run",
+                (item.result_notice_id, item.tender_notice_id,
+                 int(item.same_project_code), int(item.same_purchaser),
+                 int(item.publish_order_ok), int(item.corrections_ok),
+                 int(item.eligible), run_id, run_id),
+            )
+        for item in attributions:
+            self.connection.execute(
+                "INSERT INTO attributions(result_notice_id, declared_notice_id, "
+                "listed_notice_id, inferred_notice_id, chosen_notice_id, evidence_level, "
+                "status, reason_code, strict_status, auxiliary_status, detail, "
+                "first_seen_run, last_seen_run, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT(result_notice_id) DO UPDATE SET "
+                "declared_notice_id=excluded.declared_notice_id, "
+                "listed_notice_id=excluded.listed_notice_id, "
+                "inferred_notice_id=excluded.inferred_notice_id, "
+                "chosen_notice_id=excluded.chosen_notice_id, "
+                "evidence_level=excluded.evidence_level, status=excluded.status, "
+                "reason_code=excluded.reason_code, strict_status=excluded.strict_status, "
+                "auxiliary_status=excluded.auxiliary_status, detail=excluded.detail, "
+                "last_seen_run=excluded.last_seen_run, updated_at=excluded.updated_at",
+                (item.result_notice_id, item.declared_notice_id, item.listed_notice_id,
+                 item.inferred_notice_id, item.chosen_notice_id, item.evidence_level,
+                 item.status, item.reason_code, item.strict_status,
+                 item.auxiliary_status, item.detail, run_id, run_id, now),
+            )
 
     def sync_review_items(self, items: Sequence[dict[str, str]], run_id: str) -> int:
         current = {(item["notice_id"], item["rule_code"]) for item in items}

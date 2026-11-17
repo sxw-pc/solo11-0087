@@ -1,9 +1,10 @@
 # 配置说明
 
-配置文件分为两类：
+配置文件分为三类：
 
 - `config/sources.yaml`：门户地址、loopback 白名单、分页、超时、响应大小上限、CSS 选择器。
 - `config/rules.yaml`：必填字段、预算上下限。
+- `config/attribution.yaml`：本地显式归属清单（结果公告 → 招标轮次）。
 
 配置在采集启动前一次性读取和校验。配置错误不会被静默忽略，CLI 会输出稳定的 JSON 错误对象并以退出码 2 结束。
 
@@ -119,8 +120,36 @@ max_budget: 500000000
 | `RESULT_AWARD_MISSING` | warning | 结果公告缺少成交金额或成交供应商 |
 | `CORRECTION_ORIGINAL_MISSING` | error | 更正公告关联的原公告不在本次公告集 |
 | `CORRECTION_CHANGES_EMPTY` | warning | 更正公告没有提取到任何变更项 |
+| `TENDER_RESULT_MISSING` | warning | 招标轮次在两种口径下都没有可信结果 |
+| `TENDER_RESULT_INFERRED` | warning | 轮次仅被推断归属关闭，严格台账待核 |
+| `RESULT_TENDER_MISSING` | warning | 结果公告缺原招标（无候选或显式目标不存在） |
+| `RESULT_CANDIDATES_AMBIGUOUS` | warning | 多个一致候选轮次，不能仅凭项目编号裁定 |
+| `RESULT_BEFORE_TENDER` | warning/error | 结果发布时间早于招标轮次（显式证据冲突时为 error） |
+| `RESULT_SELF_REVISED` | warning | 结果公告自身被更正公告修订 |
+| `ATTRIBUTION_SOURCE_CONFLICT` | error | 本地清单与公告自身引用不一致，保持冲突 |
+| `ATTRIBUTION_TARGET_MISMATCH` | error | 显式清单指向不存在之外的不匹配轮次（类型/项目/采购单位不符） |
 
-## 3. 金额与时间规范
+## 3. attribution.yaml
+
+```yaml
+entries:
+  - result_notice_id: "TA-2026-0004"
+    tender_notice_id: "TA-2026-0002"
+```
+
+| 字段 | 语义 |
+|---|---|
+| `entries` | 归属条目列表，可为空；每条包含 `result_notice_id` 与 `tender_notice_id` |
+
+本地显式归属清单是严格台账认可的两种证据之一（另一种是结果公告自身的“关联原公告”引用）。清单条目要求：
+
+- `result_notice_id` 在清单内不得重复，否则 `ATTRIBUTION_CONFIG_INVALID`。
+- 指向的招标公告不存在时归属不成立，记 `RESULT_TENDER_MISSING`。
+- 指向对象不是招标公告，或项目编号/采购单位与结果不一致时记 `ATTRIBUTION_TARGET_MISMATCH`。
+- 清单与公告自身引用不一致时保持冲突，记 `ATTRIBUTION_SOURCE_CONFLICT`，不在两者之间任选。
+- 未出现在清单中的结果公告不受影响，仍可被辅助核验推断。
+
+## 4. 金额与时间规范
 
 金额：
 
@@ -135,7 +164,7 @@ max_budget: 500000000
 - 所有输出为 `Asia/Shanghai` 时区 ISO 8601，例如 `2026-12-01T09:30:00+08:00`。
 - 非法日期记录 `NORMALIZE_DATE`，不会猜测。
 
-## 4. 端口与手工运行
+## 5. 端口与手工运行
 
 默认 mock 门户为 `127.0.0.1:5810`，复核台为 `127.0.0.1:5811`。可调整端口，但配置中 `base_url` 必须与实际门户端口一致。
 
@@ -147,7 +176,7 @@ python -m tender_anchor serve-review --data-dir data --port 5811
 
 `serve-portal` 与 `serve-review` 都固定绑定 `127.0.0.1`，不提供“绑定 0.0.0.0”的选项。
 
-## 5. 配置错误码
+## 6. 配置错误码
 
 | 错误码 | 含义 |
 |---|---|
@@ -157,8 +186,9 @@ python -m tender_anchor serve-review --data-dir data --port 5811
 | `CONFIG_SELECTOR_INVALID` | CSS 选择器语法错误 |
 | `CONFIG_VALUE_OUT_OF_RANGE` | 分页、超时或大小超出范围 |
 | `RULE_CONFIG_INVALID` | 规则字段或预算区间非法 |
+| `ATTRIBUTION_CONFIG_INVALID` | 归属清单结构非法或结果公告重复 |
 
-## 6. 离线修改建议
+## 7. 离线修改建议
 
 - 只调整虚构门户的路由、分页和选择器，不要把 `base_url` 改成任何非 loopback 地址。
 - 修改规则后先运行 `pytest -q`，再运行 `python -m tender_anchor demo --crawl`。
