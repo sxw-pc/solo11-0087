@@ -1,0 +1,52 @@
+{
+  "depot": "D",
+  "vehicle_capacity": 2,
+  "distance": {
+    "D": {
+      "A": 10,
+      "B": 9,
+      "C": 8
+    },
+    "A": {
+      "D": 10,
+      "B": 2,
+      "C": 5
+    },
+    "B": {
+      "D": 9,
+      "A": 2,
+      "C": 6
+    },
+    "C": {
+      "D": 8,
+      "A": 5,
+      "B": 6
+    }
+  },
+  "contracts": {
+    "equal_share": {
+      "charge_rule": "equal_sponsor"
+    },
+    "marginal_share": {
+      "charge_rule": "coalition_marginal"
+    }
+  },
+  "notice_id": "TA-2026-0001",
+  "sponsors": [
+    {
+      "sponsor_id": "s-A",
+      "stop": "A",
+      "units": 1
+    },
+    {
+      "sponsor_id": "s-B",
+      "stop": "B",
+      "units": 1
+    },
+    {
+      "sponsor_id": "s-C",
+      "stop": "C",
+      "units": 1
+    }
+  ]
+}
