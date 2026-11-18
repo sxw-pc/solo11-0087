@@ -24,18 +24,29 @@ def test_simple_lot_preview_has_two_structured_rows():
     assert result["skipped_rows"] == []
 
 
-def test_rowspan_correction_is_detected_as_incomplete_preview():
+def test_rowspan_correction_attributes_every_detail_row():
     result = _preview("rowspan-correction.html", "TA-LOT-101")
     assert result["kind"] == "correction"
     assert result["related_notice_id"] == "TA-LOT-100"
-    assert result["skipped_rows"] == [2, 4]
-    assert [(row["lot_id"], row["item"]) for row in result["rows"]] == [
-        ("LOT-A", "终端"), ("LOT-B", "控制器")]
+    assert result["skipped_rows"] == []
+    assert [(row["lot_id"], row["item"], row["amount_normalized"])
+            for row in result["rows"]] == [
+                ("LOT-A", "终端", "110.00"),
+                ("LOT-A", "安装", "40.00"),
+                ("LOT-B", "控制器", "230.00"),
+                ("LOT-B", "维护", "70.00"),
+            ]
 
 
 def test_partial_correction_keeps_original_notice_link():
     result = _preview("partial-correction.html", "TA-LOT-102")
     assert result["related_notice_id"] == "TA-LOT-100"
-    assert result["skipped_rows"] == [2]
-    assert [(row["lot_id"], row["item"]) for row in result["rows"]] == [
-        ("LOT-A", "终端")]
+    assert result["skipped_rows"] == []
+    assert [(row["lot_id"], row["item"], row["amount_raw"], row["amount_normalized"])
+            for row in result["rows"]] == [
+                ("LOT-A", "终端", "110元", "110.00"),
+                ("LOT-A", "安装", "40元", "40.00"),
+            ]
+    # The nested annotation table must not create a row or pollute 40元.
+    assert all("999" not in row["amount_raw"] for row in result["rows"])
+    assert all(row["lot_id"] != "LOT-B" for row in result["rows"])

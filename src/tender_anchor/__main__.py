@@ -18,6 +18,7 @@ from .config import load_config, load_rules
 from .errors import AppError
 from .export import export_all
 from .mock_portal.app import create_mock_app
+from .lot_effective import resolve_effective_lots
 from .lot_preview import preview_lots
 from .pipeline import run_crawl
 from .store import Store
@@ -119,10 +120,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     export = sub.add_parser("export", help="从已有 SQLite 重新生成 JSON/CSV")
     export.add_argument("--data-dir", default=str(DEFAULT_DATA))
-    lots = sub.add_parser("lot-preview", help="预览本地公告详情的简单分项行")
-    lots.add_argument("--html", required=True)
-    lots.add_argument("--url", required=True)
+    lots = sub.add_parser("lot-preview", help="预览本地公告分项并核定有效清单")
+    lots.add_argument("--html", required=True, help="原公告或单份公告 HTML")
+    lots.add_argument("--url", required=True, help="对应公告 URL，用于验明归属")
     lots.add_argument("--config", default=str(DEFAULT_CONFIG))
+    lots.add_argument(
+        "--correction", action="append", default=[], metavar="HTML::URL",
+        help="更正公告 HTML 与 URL（path::url），可重复；提供后输出有效分项清单",
+    )
+    lots.add_argument(
+        "--policy", choices=("delta_lots", "replace_lots"), default="delta_lots",
+        help="更正完整性合同：delta_lots 仅替换列出分项，replace_lots 视为完整新清单",
+    )
     return parser
 
 
@@ -144,9 +153,26 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "export":
             return _export(args)
         if args.command == "lot-preview":
-            html = Path(args.html).read_text(encoding="utf-8")
             config = load_config(args.config)
-            _emit(preview_lots(html, args.url, config.selectors))
+            original_html = Path(args.html).read_text(encoding="utf-8")
+            if not args.correction:
+                _emit(preview_lots(original_html, args.url, config.selectors))
+                return 0
+            corrections = []
+            for spec in args.correction:
+                path, _, url = spec.partition("::")
+                if not path or not url:
+                    raise AppError(
+                        "CONFIG_INVALID",
+                        f"--correction 需要 path::url 格式：{spec}",
+                    )
+                corrections.append(
+                    (Path(path).read_text(encoding="utf-8"), url)
+                )
+            _emit(resolve_effective_lots(
+                original_html, args.url, corrections, config.selectors,
+                policy=args.policy,
+            ))
             return 0
     except AppError as exc:
         _emit({"error": exc.to_dict()})

@@ -81,6 +81,8 @@ python -m tender_anchor serve-review --data-dir data_demo
 | `test_rules.py` | 必填、预算区间、截止时间、附件失败、结果缺失、更正关联、排序 |
 | `test_pipeline.py` | 端到端、二次运行、导出顺序、外链阻断、重定向阻断 |
 | `test_web.py` | 页面、过滤、安全头、错误码、只读、下载、缺少导出 |
+| `test_lot_preview.py` | 固定起点简单表、部分更正 rowspan 归属、完整跨行更正 |
+| `test_lot_effective.py` | delta/replace 合同、归属验明、重复/无效拒发、证据变化重算、CLI 字节稳定 |
 
 ## 4. 安全验收
 
@@ -95,7 +97,7 @@ python -m tender_anchor serve-review --data-dir data_demo
 
 ## 5. 工程质量验收
 
-- Python 代码（含测试）总量在 2500–4500 行之间。
+- Python 代码（含测试）总量在 2500–5500 行之间（分项预览与有效清单能力新增约 1100 行）。
 - 任何 Python 文件不超过 300 行。
 - 运行依赖均为常见本机包，无浏览器二进制、GPU、外部数据库。
 - 错误使用稳定错误码；运行错误可解释。

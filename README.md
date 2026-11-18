@@ -57,7 +57,26 @@ python -m tender_anchor serve-review --data-dir data
 
 # 从已有数据库重新生成 data/exports/notices.json 与 notices.csv
 python -m tender_anchor export --data-dir data
+
+# 预览单份本地公告的分项行（含跨行归属、金额归一化与稳定拒发原因）
+python -m tender_anchor lot-preview \
+  --html fixtures/lot_table/partial-correction.html \
+  --url http://127.0.0.1:5810/notices/TA-LOT-102
+
+# 以原公告 + 更正公告核定有效分项清单（delta_lots 保留未列分项）
+python -m tender_anchor lot-preview \
+  --html fixtures/lot_table/simple.html \
+  --url http://127.0.0.1:5810/notices/TA-LOT-100 \
+  --correction fixtures/lot_table/partial-correction.html::http://127.0.0.1:5810/notices/TA-LOT-102 \
+  --policy delta_lots
 ```
+
+`lot-preview` 的两份更正完整性合同：
+
+- `delta_lots`（默认）：只替换更正表明确列出的 `(lot_id, item)`，原公告其余分项保留。
+- `replace_lots`：更正表视为完整新清单，未列出的原分项进入 `withdrawn`。
+
+更正公告必须由 `公告类型=更正公告`、`关联原公告` 指向原公告、且双方 `项目编号` 一致来验明归属；否则整份更正被记入 `excluded_sources`，不会混入有效清单。
 
 演示数据默认写入 `data_demo/`，手工采集默认写入 `data/`。复核台可以指向任一数据目录，例如：
 

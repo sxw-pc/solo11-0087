@@ -253,3 +253,44 @@ attachments/<notice_id>/<sha256前12位>_<安全文件名>
 ## 7. 稳定错误码
 
 见 `src/tender_anchor/errors.py` 的 `ERROR_CATALOG`，涵盖配置、URL/网络、解析、归一化、附件、存储、导出与管线。运行错误对象只使用这些稳定代码；HTTP 非 2xx 使用 `FETCH_HTTP_ERROR`，具体状态放在错误消息和上下文中。
+
+## 8. 分项预览与有效清单
+
+`lot-preview` 的输出来自 `lot_preview.py`（单份公告）与 `lot_effective.py`（跨原公告/更正公告）。
+
+预览 `rows` 每项：
+
+| 字段 | 说明 |
+|---|---|
+| `lot_id` / `item` | 分项身份键 `(lot_id, item)`；不同 lot 的同名 item 不合并 |
+| `amount_raw` | 外层金额单元格原文（不含嵌套注释表文本） |
+| `amount_normalized` | 两位小数金额；无法解析时为拒发，不进入 `rows` |
+| `row_index` | 外层表物理行序号，从 1 开始 |
+| `raw_text` | 三列原文以 ` \| ` 连接，用于复核追溯 |
+| `source_notice_id` / `source_kind` / `source_url` | 来源公告、类型与 URL |
+| `html_sha256` / `evidence_sha256` | 原始 HTML 指纹与跨行格位证据指纹 |
+
+预览同时输出 `skipped_rows` 与 `rejected`（每项含 `row_index`、稳定 `code`、`message`）。拒发码：
+
+| 错误码 | 含义 |
+|---|---|
+| `LOT_ROW_SHAPE` | 逻辑行不是恰好 lot/分项/金额 三列，或出现跨列单元格 |
+| `LOT_ROW_KEY_EMPTY` | lot 编号或分项名称为空 |
+| `LOT_ROWSPAN_OUT_OF_BOUNDS` | rowspan 非法或超出本表行数 |
+| `LOT_AMOUNT_INVALID` | 金额无法归一化为正数 |
+| `LOT_DUPLICATE_KEY` | 同一来源内 `(lot_id, item)` 重复 |
+
+有效清单 `build_effective_lots` 输出：
+
+| 字段 | 说明 |
+|---|---|
+| `policy` | `delta_lots` 或 `replace_lots` |
+| `sources` | 参与核定的原公告与已验明更正公告来源摘要 |
+| `excluded_sources` | 未通过归属验明的更正公告及原因码 |
+| `rows` | 有效分项；每项带 `origin`、来源公告、HTML/证据指纹、`supersedes` |
+| `withdrawn` | `replace_lots` 下被撤回、未出现在更正清单中的原分项 |
+| `rejected` | 各来源的稳定拒发行 |
+| `fingerprint` | 对全部输出字段的稳定哈希；输入变化即改变 |
+
+归属验明码：`LOT_IDENTITY_NOT_CORRECTION`、`LOT_IDENTITY_UNVERIFIED`、`LOT_IDENTITY_CONFLICT`、`LOT_POLICY_INVALID`。
+
