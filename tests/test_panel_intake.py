@@ -19,6 +19,8 @@ def test_panel_intake_preserves_ballots_and_disclosure(crawled):
     assert [row["status"] for row in preview["bids"]] == ["eligible", "eligible"]
     assert len(preview["ballots"]) == 8
     assert preview["disclosures"][0]["reviewer_id"] == "R1"
+    assert preview["initial"]["winner_bidder_id"] == "supplier-a"
+    assert preview["final_award"]["winner_bidder_id"] == "supplier-b"
 
 
 def test_panel_intake_rejects_duplicate_ballot(tmp_path):

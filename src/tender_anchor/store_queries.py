@@ -17,6 +17,9 @@ class StoreQueriesMixin:
         allowed = {
             "notices", "attachments", "corrections", "notice_revisions",
             "raw_snapshots", "review_items", "runs", "field_sources", "audit_events",
+            "panel_cases", "panel_reviewers", "panel_bids", "panel_ballots",
+            "panel_disclosures", "panel_contracts", "panel_reviews",
+            "panel_review_votes", "panel_awards", "panel_corrections",
         }
         if table not in allowed:
             raise StoreError("STORE_QUERY", f"不允许的统计表：{table}")
@@ -137,6 +140,46 @@ class StoreQueriesMixin:
             "field_sources": self.get_field_sources(notice_id),
             "review_items": self.get_review_items(notice_id=notice_id),
             "snapshots": self.get_snapshots(notice_id),
+        }
+
+    def get_panel_cases(self) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT c.*, a.status AS award_status, a.winner_bidder_id, a.winning_mean, "
+            "a.stage AS award_stage, a.contract_id AS award_contract_id "
+            "FROM panel_cases c LEFT JOIN panel_awards a ON a.case_id=c.case_id "
+            "ORDER BY c.case_id"
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_panel_bundle(self, case_id: str) -> dict[str, Any] | None:
+        row = self.connection.execute(
+            "SELECT * FROM panel_cases WHERE case_id=?", (case_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        reviews = self.connection.execute(
+            "SELECT * FROM panel_reviews WHERE case_id=? ORDER BY version", (case_id,)
+        ).fetchall()
+        votes = self.connection.execute(
+            "SELECT vote_id, review_id, bid_id, reviewer_id, ballot_id, score, included, "
+            "exclusion_reason FROM panel_review_votes WHERE review_id IN "
+            "(SELECT review_id FROM panel_reviews WHERE case_id=?) "
+            "ORDER BY review_id, bid_id, reviewer_id", (case_id,),
+        ).fetchall()
+        corrections = self.connection.execute(
+            "SELECT correction_id, review_id, prior_review_id, from_winner_bidder_id, "
+            "to_winner_bidder_id, reason, created_at FROM panel_corrections "
+            "WHERE case_id=? ORDER BY correction_id", (case_id,),
+        ).fetchall()
+        award = self.connection.execute(
+            "SELECT * FROM panel_awards WHERE case_id=?", (case_id,)
+        ).fetchone()
+        return {
+            "case": dict(row),
+            "reviews": [dict(item) for item in reviews],
+            "votes": [dict(item) for item in votes],
+            "corrections": [dict(item) for item in corrections],
+            "award": dict(award) if award else None,
         }
 
     def stats(self) -> dict[str, Any]:

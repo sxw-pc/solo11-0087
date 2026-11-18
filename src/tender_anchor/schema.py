@@ -137,6 +137,124 @@ CREATE TABLE IF NOT EXISTS audit_events (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS panel_cases (
+    case_id TEXT PRIMARY KEY,
+    notice_id TEXT NOT NULL,
+    round_id TEXT NOT NULL,
+    scoring_json TEXT NOT NULL,
+    initial_review_at TEXT NOT NULL,
+    evidence_hash TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS panel_reviewers (
+    case_id TEXT NOT NULL,
+    reviewer_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    available INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (case_id, reviewer_id)
+);
+
+CREATE TABLE IF NOT EXISTS panel_bids (
+    case_id TEXT NOT NULL,
+    bid_id TEXT NOT NULL,
+    notice_id TEXT NOT NULL,
+    bidder_id TEXT NOT NULL,
+    received_at TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
+    PRIMARY KEY (case_id, bid_id)
+);
+
+CREATE TABLE IF NOT EXISTS panel_ballots (
+    case_id TEXT NOT NULL,
+    ballot_id TEXT NOT NULL,
+    reviewer_id TEXT NOT NULL,
+    bid_id TEXT NOT NULL,
+    score INTEGER NOT NULL,
+    cast_at TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
+    PRIMARY KEY (case_id, ballot_id)
+);
+
+CREATE TABLE IF NOT EXISTS panel_disclosures (
+    case_id TEXT NOT NULL,
+    disclosure_id TEXT NOT NULL,
+    reviewer_id TEXT NOT NULL,
+    bid_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    disclosed_at TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
+    PRIMARY KEY (case_id, disclosure_id)
+);
+
+CREATE TABLE IF NOT EXISTS panel_contracts (
+    case_id TEXT NOT NULL,
+    contract_id TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
+    PRIMARY KEY (case_id, contract_id)
+);
+
+CREATE TABLE IF NOT EXISTS panel_reviews (
+    review_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    case_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    stage TEXT NOT NULL,
+    contract_id TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL,
+    reason TEXT NOT NULL DEFAULT '',
+    fingerprint TEXT NOT NULL,
+    winner_bid_id TEXT NOT NULL DEFAULT '',
+    winner_bidder_id TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    effective_at TEXT NOT NULL,
+    known_disclosure_ids_json TEXT NOT NULL DEFAULT '[]',
+    summary_json TEXT NOT NULL,
+    UNIQUE(case_id, version),
+    UNIQUE(case_id, fingerprint)
+);
+
+CREATE TABLE IF NOT EXISTS panel_review_votes (
+    vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    review_id INTEGER NOT NULL,
+    bid_id TEXT NOT NULL,
+    reviewer_id TEXT NOT NULL,
+    ballot_id TEXT NOT NULL DEFAULT '',
+    score INTEGER,
+    included INTEGER NOT NULL,
+    exclusion_reason TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS panel_awards (
+    case_id TEXT PRIMARY KEY,
+    notice_id TEXT NOT NULL,
+    round_id TEXT NOT NULL,
+    review_id INTEGER NOT NULL,
+    review_version INTEGER NOT NULL,
+    stage TEXT NOT NULL,
+    contract_id TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL,
+    winner_bid_id TEXT NOT NULL DEFAULT '',
+    winner_bidder_id TEXT NOT NULL DEFAULT '',
+    winning_mean TEXT,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS panel_corrections (
+    correction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    case_id TEXT NOT NULL,
+    review_id INTEGER NOT NULL,
+    prior_review_id INTEGER,
+    from_winner_bidder_id TEXT NOT NULL DEFAULT '',
+    to_winner_bidder_id TEXT NOT NULL DEFAULT '',
+    reason TEXT NOT NULL,
+    evidence_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(case_id, review_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_notices_kind ON notices(kind);
 CREATE INDEX IF NOT EXISTS idx_notices_publish ON notices(publish_at);
 CREATE INDEX IF NOT EXISTS idx_attachments_notice ON attachments(notice_id);

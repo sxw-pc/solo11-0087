@@ -180,3 +180,73 @@ def write_run_report(paths: DataPaths, summary: dict[str, Any]) -> str:
     )
     _write_json(path, summary)
     return paths.relative(path)
+
+
+PANEL_EXPORT_SCHEMA_VERSION = 1
+
+
+def build_panel_export(store: Store) -> dict[str, Any]:
+    """Deterministic export of stored panel reviews, awards, and corrections."""
+    cases = [
+        dict(row) for row in store.connection.execute(
+            "SELECT case_id, notice_id, round_id, scoring_json, initial_review_at, "
+            "evidence_hash FROM panel_cases ORDER BY case_id"
+        ).fetchall()
+    ]
+    documents = []
+    for case in cases:
+        reviews = [
+            dict(row) for row in store.connection.execute(
+                "SELECT version, stage, contract_id, status, reason, effective_at, "
+                "known_disclosure_ids_json, winner_bid_id, winner_bidder_id, summary_json "
+                "FROM panel_reviews WHERE case_id=? ORDER BY version",
+                (case["case_id"],),
+            ).fetchall()
+        ]
+        for review in reviews:
+            review["known_disclosure_ids"] = json.loads(review.pop("known_disclosure_ids_json"))
+            review["summary"] = json.loads(review.pop("summary_json"))
+        award = store.connection.execute(
+            "SELECT review_id, review_version, stage, contract_id, status, winner_bid_id, "
+            "winner_bidder_id, winning_mean FROM panel_awards WHERE case_id=?",
+            (case["case_id"],),
+        ).fetchone()
+        corrections = [
+            {
+                **dict(row),
+                "evidence": json.loads(row["evidence_json"]),
+            }
+            for row in store.connection.execute(
+                "SELECT review_id, prior_review_id, from_winner_bidder_id, "
+                "to_winner_bidder_id, reason, evidence_json, created_at "
+                "FROM panel_corrections WHERE case_id=? ORDER BY correction_id",
+                (case["case_id"],),
+            ).fetchall()
+        ]
+        for item in corrections:
+            item.pop("evidence_json", None)
+        documents.append(
+            {
+                "case_id": case["case_id"],
+                "notice_id": case["notice_id"],
+                "round_id": case["round_id"],
+                "scoring": json.loads(case["scoring_json"]),
+                "initial_review_at": case["initial_review_at"],
+                "evidence_hash": case["evidence_hash"],
+                "reviews": reviews,
+                "award": dict(award) if award else None,
+                "corrections": corrections,
+            }
+        )
+    return {
+        "schema_version": PANEL_EXPORT_SCHEMA_VERSION,
+        "generated_at": now_iso(),
+        "case_count": len(documents),
+        "cases": documents,
+    }
+
+
+def export_panel(store: Store, paths: DataPaths) -> dict[str, Any]:
+    json_path = ensure_within(paths.root, paths.exports / "panel.json", label="export")
+    _write_json(json_path, build_panel_export(store))
+    return {"json_path": paths.relative(json_path), "case_count": store.count("panel_cases")}

@@ -41,6 +41,7 @@ def layout(title: str, body: str) -> str:
 <title>{e(title)} · 标讯锚复核台</title><style>{STYLE}</style></head><body>
 <header><strong>标讯锚 · 本地复核台</strong>
 <a href="/">概览</a><a href="/notices">标讯</a><a href="/review">复核队列</a>
+<a href="/panels">评审案件</a>
 <a href="/runs">运行台账</a><a href="/audit">审计</a>
 <span style="float:right;font-size:12px">只读 · 离线</span></header>
 <main><h1>{e(title)}</h1>{body}</main>

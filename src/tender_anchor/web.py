@@ -8,6 +8,7 @@ from flask import Flask, abort, g, request, send_file
 
 from .app_paths import ensure_within
 from .errors import StoreError
+from .panel_views import panel_detail_body, panels_body
 from .review_views import (
     audit_body, dashboard_body, detail_body, e, layout, notices_body, review_body,
     runs_body,
@@ -83,6 +84,26 @@ def create_review_app(db_path: Path | str, data_dir: Path | str | None = None) -
     @app.get("/audit")
     def audit():
         return layout("审计事件", audit_body(reader().get_audit_events(limit=100)))
+
+    @app.get("/panels")
+    def panels():
+        return layout("评审案件", panels_body(reader().get_panel_cases()))
+
+    @app.get("/panels/<case_id>")
+    def panel_detail(case_id: str):
+        bundle = reader().get_panel_bundle(case_id)
+        if bundle is None:
+            abort(404, description="评审案件不存在")
+        return layout("评审案件 " + case_id, panel_detail_body(bundle))
+
+    @app.get("/export/panel.json")
+    def export_panel_json():
+        return send_file(
+            _export_path("panel.json"),
+            mimetype="application/json",
+            as_attachment=True,
+            download_name="panel.json",
+        )
 
     def _export_path(filename: str) -> Path:
         path = ensure_within(

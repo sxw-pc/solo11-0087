@@ -53,6 +53,16 @@ pipeline.run_crawl
 | `pipeline_helpers.py` | 分页、字段归一化、来源构造、单公告处理 |
 | `web.py` | 只读 Flask 路由、安全响应头、下载 |
 | `review_views.py` | 复核台 HTML 构造（无外部资源） |
+| `panel_intake.py` | 离线评审对外入口：预览与落库 |
+| `panel_base.py` | 评审共享校验原语（时间、文本、金额、索引） |
+| `panel_case.py` | 评审案件结构、身份、范围校验与规范化 |
+| `panel_contract_terms.py` | 两份回避合同的授权与范围校验 |
+| `panel_votes.py` | 逐票计分、均分、排序与评审装配 |
+| `panel_contract.py` | 回避合同复评的票务与 quorum 检查 |
+| `panel_rules.py` | 首评、复评编排与最终授标选择 |
+| `panel_evidence.py` | 证据幂等落库与内容冲突检测 |
+| `panel_store.py` | 评审版本、授标、更正与审计 |
+| `panel_views.py` | 评审案件只读页面 |
 | `mock_portal/` | 虚构门户；分页、详情、附件、健康检查 |
 
 ## 3. 一次运行的时序
@@ -119,6 +129,15 @@ pipeline.run_crawl
 - 输出使用 `ensure_within` 解析真实路径并校验相对关系；文件名先剥离目录和危险字符。
 - 复核台使用 SQLite 只读 URI 与 `PRAGMA query_only=ON`，不提供写路由。
 - 页面使用严格 CSP、禁止 iframe、不加载任何外部脚本、样式或字体。
+
+## 6.1 离线评审裁定时序
+
+1. `panel_case.normalize_case` 校验身份、时间、范围：投标必须属于同一公告；投标人不得在同轮重复；票必须晚于投标接收；披露必须对应真实投出的票；合同必须指明授权人、授权时间、依据披露、替补与合法范围。
+2. `panel_rules.evaluate_initial` 只计入 `initial_review_at` 之前的已知披露；若披露与已有票冲突，首评被标记 `disclosure_requires_contract` 而非静默改分。
+3. 每份合同经 `panel_contract._scope` 计算剔除对与替补要求。整轮回避剔除涉事评委对所有可计分投标的票并逐标要求替补票；独立绝对评分只剔除被披露的具体投标。
+4. `panel_votes.build_bid_rows` 仅在每标恰好 `quorum` 张独立有效票时给出均分；否则该标无均分，评审 `pending_verification`，不产生赢家。两票与三票均分绝不混比。
+5. 治理合同（`governing_contract_id`）的复评决定最终授标；无治理合同时按首评，但存在迟到披露且无合同时保持待核。
+6. `panel_store` 以版本链持久化：首评 v1 不可覆盖；重复导入重放原版本；改分/改披露/改范围抛稳定冲突；公告更正改变准入时新增 `notice_update` 版本并记录更正证据与审计事件。
 
 ## 7. 可扩展点
 

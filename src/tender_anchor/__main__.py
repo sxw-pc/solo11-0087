@@ -17,8 +17,9 @@ from .app_paths import (
 from .bid_intake import intake_bids, read_bids
 from .config import load_config, load_rules
 from .errors import AppError
-from .export import export_all
+from .export import export_all, export_panel
 from .mock_portal.app import create_mock_app
+from .panel_intake import preview_panel_case, read_panel_case, record_panel_case
 from .pipeline import run_crawl
 from .store import Store
 from .web import create_review_app
@@ -100,6 +101,20 @@ def _bid_intake(args: argparse.Namespace) -> int:
     return 0
 
 
+def _panel_intake(args: argparse.Namespace) -> int:
+    paths = ensure_layout(Path(args.data_dir))
+    case = read_panel_case(args.case)
+    with Store(paths.db_path) as store:
+        if args.record:
+            result = record_panel_case(store, case)
+            if args.export:
+                result["export"] = export_panel(store, paths)
+        else:
+            result = preview_panel_case(store, case)
+    _emit(result)
+    return 0 if result.get("status") in {"evidence_ready", "recorded"} else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tender_anchor",
@@ -131,6 +146,12 @@ def build_parser() -> argparse.ArgumentParser:
     bids = sub.add_parser("bid-intake", help="核对虚构投标信封与已采集公告")
     bids.add_argument("--data-dir", default=str(DEFAULT_DATA))
     bids.add_argument("--bids", required=True)
+
+    panel = sub.add_parser("panel-intake", help="核证离线评审票、披露并裁定授标")
+    panel.add_argument("--data-dir", default=str(DEFAULT_DATA))
+    panel.add_argument("--case", required=True)
+    panel.add_argument("--record", action="store_true", help="持久化评审版本、授标与更正证据")
+    panel.add_argument("--export", action="store_true", help="同时写出评审导出文件")
     return parser
 
 
@@ -153,6 +174,8 @@ def main(argv: list[str] | None = None) -> int:
             return _export(args)
         if args.command == "bid-intake":
             return _bid_intake(args)
+        if args.command == "panel-intake":
+            return _panel_intake(args)
     except AppError as exc:
         _emit({"error": exc.to_dict()})
         return 2

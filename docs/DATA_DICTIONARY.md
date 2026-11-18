@@ -181,12 +181,103 @@ notices 1 ─── n attachments
 |---|---|---|
 | `event_id` | INTEGER PK | 事件序号 |
 | `run_id` | TEXT | 运行 ID |
-| `event_type` | TEXT | `FETCH_BLOCKED` / `FETCH_ERROR` / `LIST_ARCHIVED` |
-| `target` | TEXT | URL 或归档路径 |
+| `event_type` | TEXT | `FETCH_BLOCKED` / `FETCH_ERROR` / `LIST_ARCHIVED` / `PANEL_*` |
+| `target` | TEXT | URL、归档路径或评审案件标识 |
 | `detail` | TEXT | 原因码或归档路径 |
 | `created_at` | TEXT | 事件时间 |
 
-外部地址、重定向、HTTP 错误等安全/传输事件会写审计；正常请求的留档由 `raw_snapshots` 和列表归档路径体现。
+外部地址、重定向、HTTP 错误等安全/传输事件会写审计；正常请求的留档由 `raw_snapshots` 和列表归档路径体现。评审事件使用 `panels:<case_id>` 作为 `run_id`，包括 `PANEL_INITIAL_RECORDED`、`PANEL_REREVIEW_RECORDED`、`PANEL_NOTICE_UPDATE_RECORDED` 与 `PANEL_AWARD_CORRECTED`。
+
+## 2.1 评审裁定表
+
+以下表存储离线评审案件的证据、版本、授标与更正。所有证据行都带内容哈希；相同标识符但内容不同会被拒绝。
+
+### `panel_cases`
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `case_id` | TEXT PK | 评审案件编号 |
+| `notice_id` | TEXT | 所属招标公告 |
+| `round_id` | TEXT | 采购轮次 |
+| `scoring_json` | TEXT | 锁定的计分规则与 quorum |
+| `initial_review_at` | TEXT | 首评签发时点（迟到披露的判定基准） |
+| `evidence_hash` | TEXT | 全部证据的稳定哈希 |
+| `created_at` / `updated_at` | TEXT | 行时间 |
+
+`notice_id`、`round_id`、`scoring_json`、`initial_review_at` 一经首次导入即锁定，后续导入不同值会抛 `PANEL_SCOPE_MISMATCH`。
+
+### `panel_reviewers` / `panel_bids` / `panel_ballots` / `panel_disclosures`
+
+| 表 | 主键 | 关键字段 |
+|---|---|---|
+| `panel_reviewers` | `(case_id, reviewer_id)` | `role`（initial/alternate）、`available` |
+| `panel_bids` | `(case_id, bid_id)` | `notice_id`、`bidder_id`、`received_at`、`amount`、`payload_hash` |
+| `panel_ballots` | `(case_id, ballot_id)` | `reviewer_id`、`bid_id`、`score`、`cast_at`、`payload_hash` |
+| `panel_disclosures` | `(case_id, disclosure_id)` | `reviewer_id`、`bid_id`、`kind`、`disclosed_at`、`payload_hash` |
+
+### `panel_contracts`
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `case_id` | TEXT | 案件 |
+| `contract_id` | TEXT | 合同编号 |
+| `payload_json` | TEXT | 规范化合同（类别、授权人/时间、依据披露、替补映射、范围） |
+| `payload_hash` | TEXT | 内容哈希 |
+
+主键：`(case_id, contract_id)`。
+
+### `panel_reviews`
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `review_id` | INTEGER PK | 评审版本行号 |
+| `case_id` | TEXT | 案件 |
+| `version` | INTEGER | 从 1 递增；1 为签发首评 |
+| `stage` | TEXT | `initial` / `rereview` / `notice_update` / `pending` |
+| `contract_id` | TEXT | 复评合同；首评为空 |
+| `status` | TEXT | `decided` / `pending_verification` |
+| `reason` | TEXT | 未裁定时的主要阻断原因 |
+| `fingerprint` | TEXT | 评审内容稳定哈希，用于重放 |
+| `winner_bid_id` / `winner_bidder_id` | TEXT | 该版本赢家（未裁定为空） |
+| `known_disclosure_ids_json` | TEXT | 该版本计入的披露 |
+| `summary_json` | TEXT | 完整评审快照（逐标票、均分、剔除理由） |
+| `created_at` / `effective_at` | TEXT | 记录时间与证据截点 |
+
+唯一约束：`(case_id, version)`、`(case_id, fingerprint)`。
+
+### `panel_review_votes`
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `vote_id` | INTEGER PK | 逐票行 |
+| `review_id` | INTEGER | 所属评审版本 |
+| `bid_id` / `reviewer_id` / `ballot_id` | TEXT | 身份 |
+| `score` | INTEGER | 原始分 |
+| `included` | INTEGER | 1 计入 / 0 剔除 |
+| `exclusion_reason` | TEXT | 剔除原因（如 `conflict_disclosure`、`outside_contract_scope`） |
+
+### `panel_awards`
+
+每个案件一行的当前授标：`case_id` PK、`review_id`/`review_version`、`stage`、`contract_id`、`status`、`winner_bid_id`、`winner_bidder_id`、`winning_mean`、`updated_at`。
+
+### `panel_corrections`
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `correction_id` | INTEGER PK | 更正行 |
+| `case_id` / `review_id` | TEXT/INTEGER | 案件与产生更正的复评 |
+| `prior_review_id` | INTEGER | 原首评 |
+| `from_winner_bidder_id` / `to_winner_bidder_id` | TEXT | 更正前后赢家 |
+| `reason` | TEXT | 更正的授权合同 |
+| `evidence_json` | TEXT | 披露、替补、缺票与议题快照 |
+| `created_at` | TEXT | 时间 |
+
+唯一约束：`(case_id, review_id)`。
+
+## 2.2 评审导出 `exports/panel.json`
+
+顶层 `schema_version`、`generated_at`、`case_count`、`cases`。每个案件含 `case_id`、`notice_id`、`round_id`、`scoring`、`initial_review_at`、`evidence_hash`、按版本排序的 `reviews`、当前 `award` 与 `corrections`。排序与字段顺序稳定，可用于审计与回归比对。
+
 
 ## 3. 导出 JSON
 
@@ -252,4 +343,15 @@ attachments/<notice_id>/<sha256前12位>_<安全文件名>
 
 ## 7. 稳定错误码
 
-见 `src/tender_anchor/errors.py` 的 `ERROR_CATALOG`，涵盖配置、URL/网络、解析、归一化、附件、存储、导出与管线。运行错误对象只使用这些稳定代码；HTTP 非 2xx 使用 `FETCH_HTTP_ERROR`，具体状态放在错误消息和上下文中。
+见 `src/tender_anchor/errors.py` 的 `ERROR_CATALOG`，涵盖配置、URL/网络、解析、归一化、附件、存储、导出、管线与评审。运行错误对象只使用这些稳定代码；HTTP 非 2xx 使用 `FETCH_HTTP_ERROR`，具体状态放在错误消息和上下文中。
+
+评审相关稳定码：
+
+| 代码 | 含义 |
+|---|---|
+| `PANEL_CASE_INVALID` | 案件结构、身份、票分数或时间无效 |
+| `PANEL_EVIDENCE_CONFLICT` | 同一编号的票/披露/合同/评审被以不同内容重新导入 |
+| `PANEL_SCOPE_MISMATCH` | 混用了不同公告、采购轮次或投标人；或案件范围被改写 |
+| `PANEL_CONTRACT_UNAUTHORISED` | 回避合同缺少授权、依据披露、合格替补或合法范围 |
+| `PANEL_QUORUM_SHORT` | 有效票或替补不足，无法形成法定多数 |
+| `PANEL_VERSION_LOCKED` | 试图覆盖已签发的评审版本 |

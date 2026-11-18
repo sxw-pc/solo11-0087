@@ -69,6 +69,10 @@ class PipelineError(AppError):
     """Fatal pipeline orchestration error."""
 
 
+class PanelError(AppError, ValueError):
+    """Invalid, conflicting, or unauthorised offline panel evidence."""
+
+
 ERROR_CATALOG: dict[str, str] = {
     "CONFIG_NOT_FOUND": "配置文件不存在或不可读。",
     "CONFIG_INVALID": "配置结构不符合约定。",
@@ -101,6 +105,12 @@ ERROR_CATALOG: dict[str, str] = {
     "RULE_CONFIG_INVALID": "复核规则配置无效。",
     "PIPELINE_NO_NOTICES": "采集流程未获得任何标讯。",
     "PIPELINE_FATAL": "采集流程发生不可恢复错误。",
+    "PANEL_CASE_INVALID": "评审案件结构或身份无效。",
+    "PANEL_EVIDENCE_CONFLICT": "同一编号的评审证据与既有记录冲突。",
+    "PANEL_SCOPE_MISMATCH": "评审证据混用了不同采购轮次、公告或投标人。",
+    "PANEL_CONTRACT_UNAUTHORISED": "回避或复评合同缺少明确授权。",
+    "PANEL_QUORUM_SHORT": "有效票或替补评委不足，无法形成法定多数。",
+    "PANEL_VERSION_LOCKED": "已签发评审版本不得被新披露直接覆盖。",
 }
 
 

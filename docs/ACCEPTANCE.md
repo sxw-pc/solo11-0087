@@ -68,6 +68,23 @@ python -m tender_anchor serve-review --data-dir data_demo
 - POST 到任意页面返回 405；不提供写入能力。
 - 页面无外部脚本、样式、字体或图片引用。
 
+## 2.5 离线评审裁定
+
+```bash
+python -m tender_anchor panel-intake --data-dir data_demo \
+  --case fixtures/panel/case.json --record --export
+```
+
+验收要求：
+
+- 首评 `winner_bidder_id == "supplier-a"`，A 84.67 / B 76.00，迟到披露 `DISC-1` 被记为 `late` 而非首评已知。
+- 整轮回避复评剔除 R1 对两标的票、以 R4 补票，A 79.33 / B 85.67，赢家 `supplier-b`。
+- 独立绝对评分复评只剔除 R1-A，A 79.33 / B 76.00，赢家 `supplier-a`。
+- 每个可计分投标恰好 3 张独立有效票；两票与三票均分不混比。
+- `fixtures/panel/case_missing_alternate.json` 与 `case_unavailable_alternate.json` 返回 `pending_verification`，不宣布赢家。
+- 重复执行同一命令重放原版本，不新增评审版本；改分或改披露对象返回 `PANEL_EVIDENCE_CONFLICT`。
+- 复核台 `/panels`、`/panels/<case_id>` 与 `/export/panel.json` 可读。
+
 ## 3. 测试矩阵
 
 | 测试文件 | 覆盖点 |
@@ -81,6 +98,10 @@ python -m tender_anchor serve-review --data-dir data_demo
 | `test_rules.py` | 必填、预算区间、截止时间、附件失败、结果缺失、更正关联、排序 |
 | `test_pipeline.py` | 端到端、二次运行、导出顺序、外链阻断、重定向阻断 |
 | `test_web.py` | 页面、过滤、安全头、错误码、只读、下载、缺少导出 |
+| `test_panel_scoring.py` | 首评、整轮/独立回避复评的不同赢家、缺替补、不可用替补、同分比价、公告更正改变准入 |
+| `test_panel_persistence.py` | 版本链、授标、更正证据、重放、改分/改披露冲突、迟到披露不可倒写、公告更正版本 |
+| `test_panel_validation.py` | 身份、范围、合同授权、整轮/绝对范围、票分数、披露与投票关联 |
+| `test_panel_cli.py` | 命令行预览/落库/导出、面板页面、冲突错误码 |
 
 ## 4. 安全验收
 
@@ -95,7 +116,7 @@ python -m tender_anchor serve-review --data-dir data_demo
 
 ## 5. 工程质量验收
 
-- Python 代码（含测试）总量在 2500–4500 行之间。
+- Python 代码（含测试）总量在 2500–7500 行之间（评审裁定模块计入后约 6700 行）。
 - 任何 Python 文件不超过 300 行。
 - 运行依赖均为常见本机包，无浏览器二进制、GPU、外部数据库。
 - 错误使用稳定错误码；运行错误可解释。
