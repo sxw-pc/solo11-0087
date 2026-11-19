@@ -137,6 +137,44 @@ CREATE TABLE IF NOT EXISTS audit_events (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS bond_cases (
+    case_id TEXT PRIMARY KEY,
+    payload_hash TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    imported_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bond_contracts (
+    contract_id TEXT PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
+    payload_json TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bond_decisions (
+    case_id TEXT NOT NULL,
+    contract_id TEXT NOT NULL,
+    bid_id TEXT NOT NULL,
+    evidence_hash TEXT NOT NULL,
+    decision_json TEXT NOT NULL,
+    evaluated_at TEXT NOT NULL,
+    PRIMARY KEY (case_id, contract_id, bid_id)
+);
+
+CREATE TABLE IF NOT EXISTS bond_allocations (
+    case_id TEXT NOT NULL,
+    contract_id TEXT NOT NULL,
+    ledger_version INTEGER NOT NULL,
+    seq INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    bid_id TEXT NOT NULL,
+    instrument_id TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    source TEXT NOT NULL,
+    recorded_at TEXT NOT NULL,
+    PRIMARY KEY (case_id, contract_id, ledger_version, seq)
+);
+
 CREATE INDEX IF NOT EXISTS idx_notices_kind ON notices(kind);
 CREATE INDEX IF NOT EXISTS idx_notices_publish ON notices(publish_at);
 CREATE INDEX IF NOT EXISTS idx_attachments_notice ON attachments(notice_id);
@@ -144,4 +182,5 @@ CREATE INDEX IF NOT EXISTS idx_corrections_original ON corrections(original_noti
 CREATE INDEX IF NOT EXISTS idx_review_status ON review_items(status, severity);
 CREATE INDEX IF NOT EXISTS idx_audit_run ON audit_events(run_id);
 CREATE INDEX IF NOT EXISTS idx_revisions_notice ON notice_revisions(notice_id);
+CREATE INDEX IF NOT EXISTS idx_bond_alloc_scope ON bond_allocations(case_id, contract_id, ledger_version);
 """

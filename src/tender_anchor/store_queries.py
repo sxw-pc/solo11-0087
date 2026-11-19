@@ -17,6 +17,7 @@ class StoreQueriesMixin:
         allowed = {
             "notices", "attachments", "corrections", "notice_revisions",
             "raw_snapshots", "review_items", "runs", "field_sources", "audit_events",
+            "bond_cases", "bond_contracts", "bond_decisions", "bond_allocations",
         }
         if table not in allowed:
             raise StoreError("STORE_QUERY", f"不允许的统计表：{table}")
@@ -138,6 +139,63 @@ class StoreQueriesMixin:
             "review_items": self.get_review_items(notice_id=notice_id),
             "snapshots": self.get_snapshots(notice_id),
         }
+
+    def get_bond_case(self, case_id: str) -> dict[str, Any] | None:
+        row = self.connection.execute(
+            "SELECT * FROM bond_cases WHERE case_id=?", (case_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def list_bond_cases(self) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT * FROM bond_cases ORDER BY case_id"
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_bond_contract(self, contract_id: str) -> dict[str, Any] | None:
+        row = self.connection.execute(
+            "SELECT * FROM bond_contracts WHERE contract_id=?", (contract_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def list_bond_contracts(self, case_id: str) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT * FROM bond_contracts WHERE case_id=? ORDER BY contract_id",
+            (case_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_bond_decisions(
+        self, case_id: str, contract_id: str
+    ) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT * FROM bond_decisions WHERE case_id=? AND contract_id=? "
+            "ORDER BY bid_id", (case_id, contract_id),
+        ).fetchall()
+        result = []
+        for row in rows:
+            item = dict(row)
+            item["decision"] = json.loads(item.pop("decision_json"))
+            result.append(item)
+        return result
+
+    def latest_bond_ledger_version(self, case_id: str, contract_id: str) -> int:
+        row = self.connection.execute(
+            "SELECT MAX(ledger_version) AS v FROM bond_allocations "
+            "WHERE case_id=? AND contract_id=?", (case_id, contract_id),
+        ).fetchone()
+        return int(row["v"] or 0)
+
+    def get_bond_ledger(
+        self, case_id: str, contract_id: str, version: int | None = None
+    ) -> list[dict[str, Any]]:
+        if version is None:
+            version = self.latest_bond_ledger_version(case_id, contract_id)
+        rows = self.connection.execute(
+            "SELECT * FROM bond_allocations WHERE case_id=? AND contract_id=? "
+            "AND ledger_version=? ORDER BY seq", (case_id, contract_id, version),
+        ).fetchall()
+        return [dict(row) for row in rows]
 
     def stats(self) -> dict[str, Any]:
         kinds = {

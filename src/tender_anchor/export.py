@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .app_paths import DataPaths, atomic_write_text, ensure_within, safe_filename
+from .bond_coverage import joint_status
 from .errors import ExportError
 from .normalize import now_iso
 from .store import Store
@@ -110,6 +111,51 @@ def build_export(store: Store) -> dict[str, Any]:
     }
 
 
+def build_bonds_export(store: Store) -> dict[str, Any]:
+    """Machine-readable view of persisted bond cases, decisions, and ledgers."""
+    cases = []
+    for case_row in store.list_bond_cases():
+        contracts = []
+        for contract_row in store.list_bond_contracts(case_row["case_id"]):
+            contract_id = contract_row["contract_id"]
+            stored = store.get_bond_decisions(case_row["case_id"], contract_id)
+            decisions = [row["decision"] for row in stored]
+            ledger = store.get_bond_ledger(case_row["case_id"], contract_id)
+            contracts.append(
+                {
+                    "contract_id": contract_id,
+                    "kind": json.loads(contract_row["payload_json"])["kind"],
+                    "joint_status": joint_status(decisions) if decisions else "unevaluated",
+                    "evidence_hash": stored[0]["evidence_hash"] if stored else "",
+                    "decisions": decisions,
+                    "ledger": [
+                        {
+                            "action": row["action"],
+                            "bid_id": row["bid_id"],
+                            "instrument_id": row["instrument_id"],
+                            "amount": row["amount"],
+                            "source": row["source"],
+                            "recorded_at": row["recorded_at"],
+                        }
+                        for row in ledger
+                    ],
+                }
+            )
+        cases.append(
+            {
+                "case_id": case_row["case_id"],
+                "imported_at": case_row["imported_at"],
+                "contracts": contracts,
+            }
+        )
+    return {
+        "schema_version": EXPORT_SCHEMA_VERSION,
+        "generated_at": now_iso(),
+        "case_count": len(cases),
+        "cases": cases,
+    }
+
+
 def _write_json(path: Path, value: Any) -> None:
     try:
         atomic_write_text(
@@ -163,11 +209,14 @@ def _write_csv(path: Path, store: Store) -> int:
 def export_all(store: Store, paths: DataPaths) -> dict[str, Any]:
     json_path = ensure_within(paths.root, paths.exports / "notices.json", label="export")
     csv_path = ensure_within(paths.root, paths.exports / "notices.csv", label="export")
+    bonds_path = ensure_within(paths.root, paths.exports / "bonds.json", label="export")
     _write_json(json_path, build_export(store))
     csv_count = _write_csv(csv_path, store)
+    _write_json(bonds_path, build_bonds_export(store))
     return {
         "json_path": paths.relative(json_path),
         "csv_path": paths.relative(csv_path),
+        "bonds_json_path": paths.relative(bonds_path),
         "csv_rows": csv_count,
         "notice_count": store.count("notices"),
     }

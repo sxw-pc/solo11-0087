@@ -15,6 +15,7 @@ from .app_paths import (
     DEFAULT_CONFIG, DEFAULT_DATA, DEFAULT_RULES, DEMO_DATA, ensure_layout,
 )
 from .bid_intake import intake_bids, read_bids
+from .bond_intake import intake_bond_case, read_bond_case
 from .config import load_config, load_rules
 from .errors import AppError
 from .export import export_all
@@ -100,6 +101,14 @@ def _bid_intake(args: argparse.Namespace) -> int:
     return 0
 
 
+def _bond_intake(args: argparse.Namespace) -> int:
+    paths = ensure_layout(Path(args.data_dir))
+    with Store(paths.db_path) as store:
+        result = intake_bond_case(store, read_bond_case(args.case))
+    _emit(result)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tender_anchor",
@@ -131,6 +140,10 @@ def build_parser() -> argparse.ArgumentParser:
     bids = sub.add_parser("bid-intake", help="核对虚构投标信封与已采集公告")
     bids.add_argument("--data-dir", default=str(DEFAULT_DATA))
     bids.add_argument("--bids", required=True)
+
+    bonds = sub.add_parser("bond-intake", help="核验跨标投标保证并持久记录占用")
+    bonds.add_argument("--data-dir", default=str(DEFAULT_DATA))
+    bonds.add_argument("--case", required=True)
     return parser
 
 
@@ -153,6 +166,8 @@ def main(argv: list[str] | None = None) -> int:
             return _export(args)
         if args.command == "bid-intake":
             return _bid_intake(args)
+        if args.command == "bond-intake":
+            return _bond_intake(args)
     except AppError as exc:
         _emit({"error": exc.to_dict()})
         return 2

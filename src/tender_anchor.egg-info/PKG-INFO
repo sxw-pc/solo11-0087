@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: tender-anchor
+Version: 0.1.0
+Summary: 标讯锚：纯本地标讯采集、归一化、复核与导出工作台
+Requires-Python: >=3.11
+Requires-Dist: Flask<4,>=3.0
+Requires-Dist: requests<3,>=2.31
+Requires-Dist: beautifulsoup4<5,>=4.12
+Requires-Dist: soupsieve<3,>=2.5
+Requires-Dist: PyYAML<7,>=6.0
+Provides-Extra: test
+Requires-Dist: pytest<9,>=8.0; extra == "test"
