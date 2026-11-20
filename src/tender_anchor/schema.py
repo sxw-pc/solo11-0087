@@ -144,4 +144,74 @@ CREATE INDEX IF NOT EXISTS idx_corrections_original ON corrections(original_noti
 CREATE INDEX IF NOT EXISTS idx_review_status ON review_items(status, severity);
 CREATE INDEX IF NOT EXISTS idx_audit_run ON audit_events(run_id);
 CREATE INDEX IF NOT EXISTS idx_revisions_notice ON notice_revisions(notice_id);
+
+CREATE TABLE IF NOT EXISTS bond_cases (
+    case_id TEXT PRIMARY KEY,
+    payload_hash TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    contract_mode TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bond_bids (
+    case_id TEXT NOT NULL,
+    bid_id TEXT NOT NULL,
+    notice_id TEXT NOT NULL,
+    bidder_id TEXT NOT NULL,
+    required_security TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    envelope_status TEXT NOT NULL,
+    envelope_reason TEXT NOT NULL,
+    security_status TEXT NOT NULL,
+    decision_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY(case_id, bid_id)
+);
+
+CREATE TABLE IF NOT EXISTS bond_instruments (
+    case_id TEXT NOT NULL,
+    instrument_id TEXT NOT NULL,
+    bidder_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    face_amount TEXT NOT NULL,
+    valid_until TEXT,
+    payload_json TEXT NOT NULL,
+    evidence_status TEXT NOT NULL,
+    effective_deadline_at TEXT,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY(case_id, instrument_id)
+);
+
+CREATE TABLE IF NOT EXISTS bond_pledge_ledger (
+    ledger_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    case_id TEXT NOT NULL,
+    action_id TEXT NOT NULL,
+    seq INTEGER NOT NULL,
+    event_type TEXT NOT NULL,
+    pledge_id TEXT,
+    bid_id TEXT NOT NULL,
+    instrument_id TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    source_action_id TEXT,
+    created_at TEXT NOT NULL,
+    UNIQUE(case_id, action_id, seq)
+);
+
+CREATE TABLE IF NOT EXISTS bond_events (
+    event_seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    case_id TEXT NOT NULL,
+    action_id TEXT NOT NULL,
+    action_type TEXT NOT NULL,
+    contract_mode TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    result_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(case_id, action_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_bond_bids_case ON bond_bids(case_id);
+CREATE INDEX IF NOT EXISTS idx_bond_ledger_case ON bond_pledge_ledger(case_id, bid_id, instrument_id);
+CREATE INDEX IF NOT EXISTS idx_bond_events_case ON bond_events(case_id);
 """

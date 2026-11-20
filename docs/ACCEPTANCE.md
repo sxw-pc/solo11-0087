@@ -68,10 +68,34 @@ python -m tender_anchor serve-review --data-dir data_demo
 - POST 到任意页面返回 405；不提供写入能力。
 - 页面无外部脚本、样式、字体或图片引用。
 
+### 2.5 跨标投标保证覆盖
+
+在已采集库（含更正公告 TA-2026-0007）上依次执行：
+
+```bash
+python -m tender_anchor bond-preview --bond-case fixtures/bonds/shared_security.json
+python -m tender_anchor bond-intake --bond-case fixtures/bonds/shared_security.json
+python -m tender_anchor bond-reallocate \
+  --bond-case fixtures/bonds/shared_security.json \
+  --action fixtures/bonds/reallocation_authorized.json
+```
+
+验收要求：
+
+- `bond-preview` 不占用额度；G-01 在延期后对 BID-004 的 `usable_for_bids` 不含 BID-004，阻断原因为 `expires_before_effective_deadline`；工具名义总额 60000 不等同可用保证。
+- 固定合同受理后 BID-001 `security_covered`（CASH-01 20000 + G-01 5000），BID-004 `security_shortfall`，仅得 G-02 自由额度 10000；既有现金质押不被静默挪用。
+- 删除更正 TA-2026-0007 后（延期前）重算，G-01 恢复对 BID-004 可用，有效截止回到 2026-12-08。
+- 预授权再分配后两标的均 `security_covered`：BID-001 由 G-01 25000 覆盖，BID-004 由 CASH-01 20000 + G-02 8000 覆盖；台账逐步回放不超面额、已提交标的不失保。
+- 相同案件/动作重放返回原结果且不新增台账；同 ID 不同材料分别报 `different evidence` / `different terms`。
+- 超面额动作（`reallocation_over_face.json`）与缺授权动作（`reallocation_without_authorization.json`）被拒绝且不留痕；公告或保函证据缺失时为待核状态。
+- 生成 `exports/bond_coverage.{json,csv}`，复核台 `/bonds` 与两个导出路由可读，POST 返回 405。
+- 原投标信封首次判定与中标轮次归属语义不变；本功能不裁定结果公告归属或信封修订。
+
 ## 3. 测试矩阵
 
 | 测试文件 | 覆盖点 |
 |---|---|
+| `test_bond_coverage.py` | 两合同资格、延期前后有效期、名义总额≠可用、资金不超占、贪心反例、质押替换原子性与逐步不失保、重放/冲突、缺证据、持久化重开、导出 |
 | `test_config.py` | 合法配置、配置指纹、外部地址、非法选择器、缺文件、路径越界、安全文件名、规则 |
 | `test_normalize.py` | 金额格式、非法金额、中文/斜杠日期、时区、日期边界、稳定哈希、文本清理 |
 | `test_mock_portal.py` | 分页、详情、合成声明、无外部资源、附件 404、健康与非法页 |

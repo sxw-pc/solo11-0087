@@ -9,9 +9,10 @@ from flask import Flask, abort, g, request, send_file
 from .app_paths import ensure_within
 from .errors import StoreError
 from .review_views import (
-    audit_body, dashboard_body, detail_body, e, layout, notices_body, review_body,
-    runs_body,
+    audit_body, bond_body, dashboard_body, detail_body, e, layout, notices_body,
+    review_body, runs_body,
 )
+from .bond_service import bond_case_summary
 from .store_queries import ReadOnlyStore
 
 
@@ -84,6 +85,19 @@ def create_review_app(db_path: Path | str, data_dir: Path | str | None = None) -
     def audit():
         return layout("审计事件", audit_body(reader().get_audit_events(limit=100)))
 
+    @app.get("/bonds")
+    def bonds():
+        store = reader()
+        case_ids = [
+            row["case_id"]
+            for row in store.connection.execute(
+                "SELECT case_id FROM bond_cases ORDER BY case_id"
+            ).fetchall()
+        ]
+        cases = [summary for summary in (bond_case_summary(store, case_id)
+                                         for case_id in case_ids) if summary]
+        return layout("跨标保证覆盖", bond_body(cases))
+
     def _export_path(filename: str) -> Path:
         path = ensure_within(
             data_root, data_root / "exports" / filename, label="review export"
@@ -108,6 +122,24 @@ def create_review_app(db_path: Path | str, data_dir: Path | str | None = None) -
             mimetype="text/csv",
             as_attachment=True,
             download_name="notices.csv",
+        )
+
+    @app.get("/export/bond_coverage.json")
+    def export_bond_json():
+        return send_file(
+            _export_path("bond_coverage.json"),
+            mimetype="application/json",
+            as_attachment=True,
+            download_name="bond_coverage.json",
+        )
+
+    @app.get("/export/bond_coverage.csv")
+    def export_bond_csv():
+        return send_file(
+            _export_path("bond_coverage.csv"),
+            mimetype="text/csv",
+            as_attachment=True,
+            download_name="bond_coverage.csv",
         )
 
     @app.errorhandler(400)

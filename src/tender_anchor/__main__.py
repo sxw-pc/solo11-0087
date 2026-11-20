@@ -15,6 +15,8 @@ from .app_paths import (
     DEFAULT_CONFIG, DEFAULT_DATA, DEFAULT_RULES, DEMO_DATA, ensure_layout,
 )
 from .bid_intake import intake_bids, read_bids
+from .bond_intake import read_bond_action, read_bond_case, preview_bond_case
+from .bond_service import apply_reallocation, intake_bond_case
 from .config import load_config, load_rules
 from .errors import AppError
 from .export import export_all
@@ -100,6 +102,35 @@ def _bid_intake(args: argparse.Namespace) -> int:
     return 0
 
 
+def _bond_preview(args: argparse.Namespace) -> int:
+    paths = ensure_layout(Path(args.data_dir))
+    case = read_bond_case(args.bond_case)
+    with Store(paths.db_path) as store:
+        _emit(preview_bond_case(store, case))
+    return 0
+
+
+def _bond_intake(args: argparse.Namespace) -> int:
+    paths = ensure_layout(Path(args.data_dir))
+    case = read_bond_case(args.bond_case)
+    with Store(paths.db_path) as store:
+        result = intake_bond_case(store, case)
+        export_all(store, paths)
+    _emit(result)
+    return 0
+
+
+def _bond_reallocate(args: argparse.Namespace) -> int:
+    paths = ensure_layout(Path(args.data_dir))
+    case = read_bond_case(args.bond_case)
+    action = read_bond_action(args.action)
+    with Store(paths.db_path) as store:
+        result = apply_reallocation(store, case, action)
+        export_all(store, paths)
+    _emit(result)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tender_anchor",
@@ -131,6 +162,21 @@ def build_parser() -> argparse.ArgumentParser:
     bids = sub.add_parser("bid-intake", help="核对虚构投标信封与已采集公告")
     bids.add_argument("--data-dir", default=str(DEFAULT_DATA))
     bids.add_argument("--bids", required=True)
+
+    bond_preview = sub.add_parser("bond-preview", help="预览保证工具证据与可用范围，不占用额度")
+    bond_preview.add_argument("--data-dir", default=str(DEFAULT_DATA))
+    bond_preview.add_argument("--bond-case", required=True)
+
+    bond_intake = sub.add_parser("bond-intake", help="按固定质押合同受理跨标保证案件")
+    bond_intake.add_argument("--data-dir", default=str(DEFAULT_DATA))
+    bond_intake.add_argument("--bond-case", required=True)
+
+    bond_reallocate = sub.add_parser(
+        "bond-reallocate", help="凭供应商预授权原子替换质押并持久留痕"
+    )
+    bond_reallocate.add_argument("--data-dir", default=str(DEFAULT_DATA))
+    bond_reallocate.add_argument("--bond-case", required=True)
+    bond_reallocate.add_argument("--action", required=True)
     return parser
 
 
@@ -153,10 +199,16 @@ def main(argv: list[str] | None = None) -> int:
             return _export(args)
         if args.command == "bid-intake":
             return _bid_intake(args)
+        if args.command == "bond-preview":
+            return _bond_preview(args)
+        if args.command == "bond-intake":
+            return _bond_intake(args)
+        if args.command == "bond-reallocate":
+            return _bond_reallocate(args)
     except AppError as exc:
         _emit({"error": exc.to_dict()})
         return 2
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
         _emit({"error": {"code": "PIPELINE_FATAL", "message": str(exc)}})
         return 2
     parser.error("未知命令")

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "action_id": "ACT-REALLOC-NOAUTH",
+  "action_type": "preauthorized_reallocation",
+  "contract_mode": "preauthorized_reallocation",
+  "allocations": [
+    {"bid_id": "BID-001", "instrument_id": "G-01", "amount": "25000.00"},
+    {"bid_id": "BID-004", "instrument_id": "CASH-01", "amount": "20000.00"},
+    {"bid_id": "BID-004", "instrument_id": "G-02", "amount": "8000.00"}
+  ]
+}

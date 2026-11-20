@@ -53,6 +53,11 @@ pipeline.run_crawl
 | `pipeline_helpers.py` | 分页、字段归一化、来源构造、单公告处理 |
 | `web.py` | 只读 Flask 路由、安全响应头、下载 |
 | `review_views.py` | 复核台 HTML 构造（无外部资源） |
+| `bond_intake.py` | 保证案件/动作材料校验与不占额度的证据预览 |
+| `bond_coverage.py` | 有效截止（含更正）、工具证据核验、跨标整体回溯分配与尽力部分覆盖 |
+| `bond_reallocation.py` | 预授权动作校验与原子质押替换规划（逐步不失保、不超面额） |
+| `bond_store.py` | 保证案件、标的、工具、只追加台账与动作的幂等持久化及冲突检测 |
+| `bond_service.py` | 固定合同受理与再分配编排、资格判定、复核同步与重放 |
 | `mock_portal/` | 虚构门户；分页、详情、附件、健康检查 |
 
 ## 3. 一次运行的时序

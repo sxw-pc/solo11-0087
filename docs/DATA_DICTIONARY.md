@@ -250,6 +250,51 @@ attachments/<notice_id>/<sha256前12位>_<安全文件名>
 - 文件名中的哈希来自原始响应字节。
 - 文件按哈希去重，不覆盖既有历史。
 
-## 7. 稳定错误码
+## 7. 跨标投标保证覆盖
 
-见 `src/tender_anchor/errors.py` 的 `ERROR_CATALOG`，涵盖配置、URL/网络、解析、归一化、附件、存储、导出与管线。运行错误对象只使用这些稳定代码；HTTP 非 2xx 使用 `FETCH_HTTP_ERROR`，具体状态放在错误消息和上下文中。
+跨标保证案件独立于投标信封受理，持久化在同一 SQLite 的五张 `bond_*` 表中。保证工具的名义面额之和从不等于可用保证：可用性由已采集公告、更正字段、投标主体与有效期共同决定，且任何时点占用不得超过工具面额。
+
+### `bond_cases`
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `case_id` | TEXT PK | 由案件内排序后的 bid id 确定性派生，如 `CASE-001-004` |
+| `payload_hash` | TEXT | 案件材料规范化 JSON 的 SHA-256；同 ID 不同内容即冲突 |
+| `payload_json` | TEXT | 原始案件材料 |
+| `contract_mode` | TEXT | `fixed_pledge` / `preauthorized_reallocation` |
+| `created_at` / `updated_at` | TEXT | 上海时区 ISO 8601 |
+
+### `bond_bids`
+
+逐标的持久化信封判定与保证判定。主键 `(case_id, bid_id)`。`security_status` 取值：
+
+- `security_covered`：已质押额度达到 `required_security`。
+- `security_shortfall`：仅获得部分自由额度，仍需补保证。
+- `pending_security`：无可用工具证据。
+- `bid_ineligible`：信封本身被拒（截止/预算）。
+- `evidence_pending`：公告或保函证据缺失，待核，不猜测资格。
+
+`decision_json` 记录有效截止时间（含 `correction_sources`）、分配明细与覆盖金额。
+
+### `bond_instruments`
+
+逐工具记录面额、`valid_until`、证据状态与对各标的的可用性。银行保函缺少 `valid_until` 时为 `evidence_pending`；有效期早于标的有效截止时间（取原公告与全部已采集更正中的最晚截止）即被阻断。
+
+### `bond_pledge_ledger`
+
+只追加的占用/释放台账。`event_type` 为 `pledge` 或 `release`，`seq` 在案件内单调。再分配以单事务写入成组台账行：新增质押先于其腾出空间所对应的释放，保证任何中间状态下已提交标的不失保、工具不超面额。`source_action_id` 记录每行的来源动作（如 `intake`）。
+
+### `bond_events`
+
+动作留痕，自增 `event_seq` 保持写入顺序，`(case_id, action_id)` 唯一。相同动作材料重放返回原结果且不新增台账；同一 `action_id` 不同内容冲突报错。
+
+### 两个合同的语义
+
+- **固定质押合同（`fixed_pledge`）**：已正式提交标的的既有质押不可移动，新标的只能使用真正自由的可拆额度。按 bid 顺序先占现金的贪心可能错误宣布联合无解，因此分配使用跨标的整体回溯（`bond_coverage.allocate`），无解时再以 `best_effort_allocate` 显式部分覆盖与差额。
+- **预授权再分配合同（`preauthorized_reallocation`）**：必须携带供应商书面授权。规划器（`bond_reallocation.plan_replacement`）原子生成质押/释放序列，逐步校验面额与失保不变量，任一步不可行则整笔动作拒绝且不留痕。
+
+导出为 `exports/bond_coverage.json` 与 `exports/bond_coverage.csv`；复核台 `/bonds` 只读展示案件、工具与台账。
+
+## 8. 稳定错误码
+
+见 `src/tender_anchor/errors.py` 的 `ERROR_CATALOG`，涵盖配置、URL/网络、解析、归一化、附件、存储、导出与管线。运行错误对象只使用这些稳定代码；HTTP 非 2xx 使用 `FETCH_HTTP_ERROR`，具体状态放在错误消息和上下文中。保证业务的材料冲突、授权缺失、超面额与失保等以 `ValueError` 稳定中文消息抛出，由 CLI 统一收口为错误对象。

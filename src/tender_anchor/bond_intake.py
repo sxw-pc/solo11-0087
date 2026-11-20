@@ -4,22 +4,13 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from .bid_intake import evaluate_bid
+from .bond_coverage import _amount, build_views
 from .store import Store
-
-
-def _amount(value: object) -> Decimal:
-    try:
-        result = Decimal(str(value))
-    except (InvalidOperation, ValueError) as exc:
-        raise ValueError("security amount is invalid") from exc
-    if not result.is_finite() or result <= 0 or result.as_tuple().exponent < -2:
-        raise ValueError("security amount must be positive cents")
-    return result
 
 
 def read_bond_case(path: str | Path) -> dict[str, Any]:
@@ -72,11 +63,63 @@ def read_bond_case(path: str | Path) -> dict[str, Any]:
 
 
 def preview_bond_case(store: Store, case: dict[str, Any]) -> dict[str, Any]:
-    """Show captured bid decisions and raw security capacity, without pledging it."""
-    bids = [evaluate_bid(store.get_notice(bid["notice_id"]), bid) for bid in case["bids"]]
+    """Show captured bid decisions and verified security capacity.
+
+    The preview never pledges capacity. Face amounts are reported per
+    instrument alongside evidence status and the bid ids the instrument can
+    actually back, so the nominal total is never mistaken for usable security.
+    """
+    bids, views = build_views(store, case)
+    instruments = []
+    for raw in case["instruments"]:
+        view = views[raw["instrument_id"]]
+        instruments.append(
+            {
+                **raw,
+                "evidence_status": view.evidence_status,
+                "blocked_reason": view.blocked_reason,
+                "usable_for_bids": sorted(view.usable_for),
+            }
+        )
     return {
         "status": "evidence_ready",
-        "bids": bids,
-        "instruments": case["instruments"],
+        "bids": [evaluate_bid(store.get_notice(bid["notice_id"]), bid)
+                 for bid in case["bids"]],
+        "instruments": instruments,
         "total_security": str(sum((_amount(item["amount"]) for item in case["instruments"]), Decimal("0"))),
+        "coverage_bids": [
+            {
+                "bid_id": bid.bid_id,
+                "effective_deadline_at": bid.effective_deadline,
+                "correction_sources": bid.correction_sources,
+                "envelope_status": bid.envelope_status,
+            }
+            for bid in bids
+        ],
     }
+
+
+def read_bond_action(path: str | Path) -> dict[str, Any]:
+    """Validate the shape of an explicit pre-authorized reallocation action."""
+    action = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(action, dict) or action.get("version") != 1:
+        raise ValueError("bond action requires version 1")
+    if not action.get("authorization"):
+        raise ValueError("bond action requires explicit supplier authorization")
+    if not all(action.get(key) for key in
+               ("action_id", "action_type", "contract_mode")):
+        raise ValueError("bond action is missing identity fields")
+    if not isinstance(action.get("allocations"), list) or not action["allocations"]:
+        raise ValueError("bond action requires an allocations list")
+    pairs: set[tuple[str, str]] = set()
+    for row in action["allocations"]:
+        if not isinstance(row, dict) or not all(
+            row.get(key) for key in ("bid_id", "instrument_id", "amount")
+        ):
+            raise ValueError("bond action has incomplete allocation")
+        pair = (row["bid_id"], row["instrument_id"])
+        if pair in pairs:
+            raise ValueError("duplicate allocation pair in action")
+        pairs.add(pair)
+        _amount(row["amount"])
+    return action

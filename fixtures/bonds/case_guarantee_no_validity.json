@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "bids": [
+    {"bid_id":"BID-301","notice_id":"TA-2026-0006","bidder_id":"supplier-h","received_at":"2026-12-07T09:00:00+08:00","amount":"1400000.00","required_security":"12000.00"}
+  ],
+  "instruments": [
+    {"instrument_id":"G-NOVALID","bidder_id":"supplier-h","kind":"bank_guarantee","amount":"12000.00"}
+  ],
+  "pledges": []
+}

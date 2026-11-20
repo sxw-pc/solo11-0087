@@ -160,15 +160,124 @@ def _write_csv(path: Path, store: Store) -> int:
     return count
 
 
+BOND_CSV_COLUMNS = (
+    "case_id", "bid_id", "notice_id", "bidder_id", "required_security",
+    "envelope_status", "envelope_reason", "effective_deadline_at",
+    "security_status", "reason", "covered_amount", "allocations",
+)
+
+
+def _bond_documents(store: Store) -> list[dict[str, Any]]:
+    case_ids = [
+        row["case_id"] for row in store.connection.execute(
+            "SELECT case_id FROM bond_cases ORDER BY case_id"
+        ).fetchall()
+    ]
+    documents = []
+    for case_id in case_ids:
+        documents.append(
+            {
+                "case_id": case_id,
+                "bids": [
+                    json.loads(row["decision_json"])
+                    for row in store.connection.execute(
+                        "SELECT decision_json FROM bond_bids WHERE case_id=? ORDER BY bid_id",
+                        (case_id,),
+                    ).fetchall()
+                ],
+                "instruments": [
+                    {
+                        "instrument_id": row["instrument_id"],
+                        "bidder_id": row["bidder_id"],
+                        "kind": row["kind"],
+                        "face_amount": row["face_amount"],
+                        "valid_until": row["valid_until"],
+                        "evidence_status": row["evidence_status"],
+                        "effective_deadline_at": row["effective_deadline_at"],
+                    }
+                    for row in store.connection.execute(
+                        "SELECT * FROM bond_instruments WHERE case_id=? ORDER BY instrument_id",
+                        (case_id,),
+                    ).fetchall()
+                ],
+                "pledge_ledger": [
+                    {
+                        "action_id": row["action_id"], "seq": row["seq"],
+                        "event_type": row["event_type"], "pledge_id": row["pledge_id"],
+                        "bid_id": row["bid_id"], "instrument_id": row["instrument_id"],
+                        "amount": row["amount"], "source_action_id": row["source_action_id"],
+                        "created_at": row["created_at"],
+                    }
+                    for row in store.connection.execute(
+                        "SELECT * FROM bond_pledge_ledger WHERE case_id=? ORDER BY ledger_id",
+                        (case_id,),
+                    ).fetchall()
+                ],
+            }
+        )
+    return documents
+
+
+def build_bond_export(store: Store) -> dict[str, Any]:
+    documents = _bond_documents(store)
+    return {
+        "schema_version": EXPORT_SCHEMA_VERSION,
+        "generated_at": now_iso(),
+        "case_count": len(documents),
+        "cases": documents,
+    }
+
+
+def _write_bond_csv(path: Path, store: Store) -> int:
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=BOND_CSV_COLUMNS, lineterminator="\n")
+    writer.writeheader()
+    count = 0
+    for document in _bond_documents(store):
+        for bid in document["bids"]:
+            writer.writerow(
+                {
+                    "case_id": document["case_id"],
+                    "bid_id": bid["bid_id"],
+                    "notice_id": bid["notice_id"],
+                    "bidder_id": bid["bidder_id"],
+                    "required_security": bid["required_security"],
+                    "envelope_status": bid["envelope_status"],
+                    "envelope_reason": bid["envelope_reason"],
+                    "effective_deadline_at": bid.get("effective_deadline_at") or "",
+                    "security_status": bid["security_status"],
+                    "reason": bid["reason"],
+                    "covered_amount": bid["covered_amount"],
+                    "allocations": "|".join(
+                        f"{item['instrument_id']}:{item['amount']}"
+                        for item in bid["allocations"]
+                    ),
+                }
+            )
+            count += 1
+    try:
+        atomic_write_text(path, buffer.getvalue())
+    except OSError as exc:
+        raise ExportError("EXPORT_WRITE", f"CSV 导出失败：{path}") from exc
+    return count
+
+
 def export_all(store: Store, paths: DataPaths) -> dict[str, Any]:
     json_path = ensure_within(paths.root, paths.exports / "notices.json", label="export")
     csv_path = ensure_within(paths.root, paths.exports / "notices.csv", label="export")
     _write_json(json_path, build_export(store))
     csv_count = _write_csv(csv_path, store)
+    bond_json = ensure_within(paths.root, paths.exports / "bond_coverage.json", label="export")
+    bond_csv = ensure_within(paths.root, paths.exports / "bond_coverage.csv", label="export")
+    _write_json(bond_json, build_bond_export(store))
+    bond_rows = _write_bond_csv(bond_csv, store)
     return {
         "json_path": paths.relative(json_path),
         "csv_path": paths.relative(csv_path),
         "csv_rows": csv_count,
+        "bond_json_path": paths.relative(bond_json),
+        "bond_csv_path": paths.relative(bond_csv),
+        "bond_rows": bond_rows,
         "notice_count": store.count("notices"),
     }
 

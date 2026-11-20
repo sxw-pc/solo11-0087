@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "bids": [
+    {"bid_id":"BID-101","notice_id":"TA-2026-9101","bidder_id":"supplier-x","received_at":"2026-11-30T09:00:00+08:00","amount":"500000.00","required_security":"10000.00"}
+  ],
+  "instruments": [
+    {"instrument_id":"CASH-91","bidder_id":"supplier-x","kind":"cash","amount":"10000.00"}
+  ],
+  "pledges": []
+}

@@ -41,6 +41,7 @@ def layout(title: str, body: str) -> str:
 <title>{e(title)} · 标讯锚复核台</title><style>{STYLE}</style></head><body>
 <header><strong>标讯锚 · 本地复核台</strong>
 <a href="/">概览</a><a href="/notices">标讯</a><a href="/review">复核队列</a>
+<a href="/bonds">保证覆盖</a>
 <a href="/runs">运行台账</a><a href="/audit">审计</a>
 <span style="float:right;font-size:12px">只读 · 离线</span></header>
 <main><h1>{e(title)}</h1>{body}</main>
@@ -223,3 +224,47 @@ def audit_body(events: list[dict[str, Any]]) -> str:
         for item in events
     ]
     return _rows_table(["时间", "事件", "目标", "详情"], rows)
+
+
+def bond_body(cases: list[dict[str, Any]]) -> str:
+    if not cases:
+        return '<p class="muted">尚无跨标保证案件。使用 bond-intake 离线入口受理。</p>'
+    sections = []
+    for case in cases:
+        info = case["case"]
+        bid_rows = [
+            [e(row["bid_id"]), e(row["notice_id"]), e(row["required_security"]),
+             e(row["effective_deadline_at"] or "—"),
+             f'<span class="sev-{"error" if row["security_status"] == "security_shortfall" else "warning"}">'
+             f'{e(row["security_status"])}</span>',
+             e(row["reason"]),
+             e("|".join(f"{a['instrument_id']}:{a['amount']}" for a in row["allocations"]) or "—")]
+            for row in case["bids"]
+        ]
+        instrument_rows = [
+            [e(row["instrument_id"]), e(row["kind"]), e(row["face_amount"]),
+             e(row["valid_until"] or "—"), e(row["evidence_status"]),
+             e(row["reserved_amount"]), e(row["free_amount"])]
+            for row in case["instruments"]
+        ]
+        ledger_rows = [
+            [e(row["action_id"]), e(row["seq"]), e(row["event_type"]), e(row["bid_id"]),
+             e(row["instrument_id"]), e(row["amount"]), e(row["source_action_id"] or "—")]
+            for row in case["ledger"]
+        ]
+        sections.append(
+            f"<h2>案件 <code>{e(info['case_id'])}</code> · {e(info['contract_mode'])}</h2>"
+            + _rows_table(
+                ["投标", "公告", "需保证", "有效截止", "保证状态", "原因", "已占额度"],
+                bid_rows,
+            )
+            + _rows_table(
+                ["工具", "类型", "面额", "有效期至", "证据", "已占用", "可拆余额"],
+                instrument_rows,
+            )
+            + _rows_table(
+                ["动作", "序号", "事件", "投标", "工具", "金额", "来源动作"],
+                ledger_rows,
+            )
+        )
+    return "".join(sections)

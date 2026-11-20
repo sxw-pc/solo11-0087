@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "action_id": "ACT-REALLOC-001",
+  "action_type": "preauthorized_reallocation",
+  "contract_mode": "preauthorized_reallocation",
+  "authorization": {
+    "contract_id": "RA-CONTRACT-supplier-a-2026-12",
+    "bidder_id": "supplier-a",
+    "granted_at": "2026-12-07T10:00:00+08:00",
+    "scope": "BID-001,BID-004",
+    "evidence": "供应商书面预授权再分配合同（虚构演示素材）"
+  },
+  "allocations": [
+    {"bid_id": "BID-001", "instrument_id": "G-01", "amount": "25000.00"},
+    {"bid_id": "BID-004", "instrument_id": "CASH-01", "amount": "20000.00"},
+    {"bid_id": "BID-004", "instrument_id": "G-02", "amount": "8000.00"}
+  ]
+}
