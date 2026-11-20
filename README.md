@@ -4,11 +4,38 @@
 `fixtures/panel/schedule-conflict.json` 与
 `src/tender_anchor/panel_schedule.py::preview_schedule`。它在合成招标编号下
 读取分项评审席位、评委资格和容量，给出确定性的先到先配预览；
-缺席场景、评委互斥与既有草案仅保留为输入证据，目前不签发排班承诺。
+缺席场景、评委互斥与既有草案仅保留为输入证据，预览本身不签发排班承诺
+（`commitment_decision` 恒为 `null`）。
 `src/tender_anchor/panel_commit.py::preview_commitment` 接受预览及同一公告的合同/缺席证据，保留待核承诺位。
 `panel_attendance.py::read_attendance/preview_attendance` 读取 256 个合成评审日的联合缺席记录，保留
-R4 单人缺席和 R4/R5 同日缺席频数；目前不把频数换成风险保证。
+R4 单人缺席和 R4/R5 同日缺席频数；预览不把频数换成风险保证（`risk_bounds` 恒为 `null`）。
 可运行 `PYTHONPATH=src python -B -m tender_anchor.panel_schedule --case fixtures/panel/schedule.json`。
+
+在同一批输入上，`panel_commit.py::certify_commitments` 分别评估两份事前授权合同，
+首配无空席不等同于可签风险证书：
+
+- `frozen_signed`：已签席位（LOT-A 的 R1/R2）不可移动，当日仅能在剩余评委中为 LOT-B 补位；
+- `replan_draft`：两个 lot 均为未签草案，观察当日缺席后可同步重排。
+
+逐日求解同时强制每 lot 两名互异合格评委、每人容量 1、`incompatibilities` 互斥与缺席者不可分配，
+联合缺席按整组处理、不拆成独立边际概率相乘。主 fixture 上前者失败 32/256 天、后者 4/256 天；
+每份合同预配 α=.025，对失败 Bernoulli 均值使用单侧 Hoeffding 上界
+`min(1, x/256 + sqrt(log(40)/512))`，共同余量约 0.0848813：
+前者上界约 0.2098813 → 15% 门槛下 `hold`，后者上界约 0.1005063 → `certify`。
+冲突 fixture（R1/R3、R2/R3 不可同组）下，R4 单缺席日 replan 也无法合法填满 LOT-A，
+结论翻转为 32/256、上界约 0.2098813、`hold`。覆盖含义仅在调用方事前声明的独立同分布评审日模型、
+未改动日样本与事前固定的两份合同下成立，观察样本不证明真实未来的独立性；样本日重复、评委身份不符、
+合同/输入指纹变化或未声明抽样模型时输出 `rejected` 与可追溯原因，不伪造低风险。
+证书绑定 schedule/attendance 内容指纹与整体 digest，相同输入重放字节稳定，仅重排样本日时重新核证且风险值不变：
+
+```bash
+PYTHONPATH=src python -B -m tender_anchor.panel_commit \
+  --case fixtures/panel/schedule.json \
+  --evidence fixtures/panel/attendance-days.json [--text]
+# 或主 CLI
+PYTHONPATH=src python -B -m tender_anchor panel-certify \
+  --case fixtures/panel/schedule.json --evidence fixtures/panel/attendance-days.json
+```
 
 隔离业务素材还提供 `fixtures/panel/case.json` 和
 `src/tender_anchor/panel_intake.py::preview_panel_case`，把离线评审票、备选评委与

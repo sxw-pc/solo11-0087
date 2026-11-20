@@ -19,6 +19,9 @@ from .config import load_config, load_rules
 from .errors import AppError
 from .export import export_all
 from .mock_portal.app import create_mock_app
+from .panel_attendance import read_attendance
+from .panel_commit import certify_commitments, render_certificate_text
+from .panel_schedule import preview_schedule, read_schedule_case
 from .pipeline import run_crawl
 from .store import Store
 from .web import create_review_app
@@ -100,6 +103,23 @@ def _bid_intake(args: argparse.Namespace) -> int:
     return 0
 
 
+def _panel_certify(args: argparse.Namespace) -> int:
+    case = read_schedule_case(args.case)
+    evidence = read_attendance(args.evidence)
+    schedule_preview = {
+        "notice_id": case["notice_id"],
+        "assignments": preview_schedule(case)["assignments"],
+    }
+    certificate = certify_commitments(
+        case, schedule_preview, evidence,
+        threshold=args.threshold, alpha=args.alpha)
+    if args.text:
+        print(render_certificate_text(certificate), end="")
+    else:
+        _emit(certificate)
+    return 3 if certificate["status"] == "rejected" else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tender_anchor",
@@ -131,6 +151,13 @@ def build_parser() -> argparse.ArgumentParser:
     bids = sub.add_parser("bid-intake", help="核对虚构投标信封与已采集公告")
     bids.add_argument("--data-dir", default=str(DEFAULT_DATA))
     bids.add_argument("--bids", required=True)
+
+    certify = sub.add_parser("panel-certify", help="对排班承诺与联合缺席证据签发风险证书")
+    certify.add_argument("--case", required=True, help="schedule case JSON")
+    certify.add_argument("--evidence", required=True, help="attendance days JSON")
+    certify.add_argument("--threshold", type=float, default=0.15)
+    certify.add_argument("--alpha", type=float, default=0.025)
+    certify.add_argument("--text", action="store_true", help="输出稳定文本摘要而非 JSON")
     return parser
 
 
@@ -153,6 +180,8 @@ def main(argv: list[str] | None = None) -> int:
             return _export(args)
         if args.command == "bid-intake":
             return _bid_intake(args)
+        if args.command == "panel-certify":
+            return _panel_certify(args)
     except AppError as exc:
         _emit({"error": exc.to_dict()})
         return 2
