@@ -3,9 +3,27 @@
 隔离业务素材增加 `src/tender_anchor/capture_overlap.py` 与
 `fixtures/coverage/two-portals.json`：两条本地合成公告采集流各保留 100 份
 `notice_id`/`source_hash` 收据，另有 20 条运营方明示的跨门户别名收据。
-当前只核收据结构与同内容别名，报告字面 ID 重叠 40、别名 20；
-是否能以任何覆盖率声明对外发布仍留为 `coverage_decision=null`。
-可运行 `PYTHONPATH=src python -B -m tender_anchor.capture_overlap --panel fixtures/coverage/two-portals.json`。
+
+预览器分别为两份发布合同出具单侧 95% 覆盖证书，各用完整的超几何捕获重叠分布反演
+`P_N(M≥m) ≥ 0.05` 的最大未知总体 `N_U`，覆盖率下界为 `U/N_U`：
+
+| 合同 | 单位 | m | U | N_U | 下界 | 结论 |
+|---|---|---:|---:|---:|---:|---|
+| `public_id_records` | 公开 ID 记录 | 40 | 160 | 301 | 0.53156 | `hold`（低于 75%） |
+| `operator_canonical_notices` | 规范公告 | 60 | 140 | 185 | 0.75676 | `certify`（达到 75%） |
+
+公开 ID 合同只按“ID 完全相同且版本哈希一致”计重叠，TA-041 与 MIR-041 即使正文哈希
+相同仍是两个单位；规范公告合同仅在 `local-mock-operator` 被合同事前授权、收据一对一且
+两端 SHA 相符时合并别名。两合同各自只对自身总体口径作条件性声明，不混用 160/140，
+也不主张观测证明了采样独立性。缺少采样模型、别名多对一/循环、同 ID 异哈希、采集轮次
+不符或版本绑定过期时，相应合同拒证或隔离冲突，可疑别名不计入 `m`。输出含尾概率邻界
+见证、别名/单位证据、`m/U/N_U`、结论与可重放摘要；同一输入重跑字节稳定。
+
+```bash
+PYTHONPATH=src python -B -m tender_anchor.capture_overlap --panel fixtures/coverage/two-portals.json
+# 可选：把收据绑定到现有 SQLite 中的当前公告版本，任何版本变化都会强制重新核定
+PYTHONPATH=src python -B -m tender_anchor.capture_overlap --panel fixtures/coverage/two-portals.json --db path/to/tender_anchor.sqlite3
+```
 
 **标讯锚**是一个纯本地、配置驱动、可重复运行的标讯采集与核验工作台。它把一条完整的离线数据链路收敛为可测试的工程闭环：
 
